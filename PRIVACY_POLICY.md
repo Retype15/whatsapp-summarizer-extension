@@ -1,9 +1,5 @@
-Below is a detailed Privacy Policy in English that covers all the necessary aspects for your Chromiun extension:
-
----
-
 **Privacy Policy for WhatsApp Summarizer Extension**  
-Effective Date: [Insert Date]
+Effective Date: 12/04/2025
 
 This Privacy Policy explains how the WhatsApp Summarizer Extension ("the Extension") collects, uses, processes, and protects any information that may be generated during its operation. We are committed to safeguarding your privacy and ensuring full transparency regarding our data practices.
 
@@ -39,7 +35,7 @@ This Privacy Policy explains how the WhatsApp Summarizer Extension ("the Extensi
 
 **8. Contact Information**  
 If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:  
-[Insert Contact Email or Address]
+- email: reynierramos280@gmail.com
 
 ---
 
