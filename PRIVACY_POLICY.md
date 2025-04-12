@@ -36,9 +36,3 @@ This Privacy Policy explains how the WhatsApp Summarizer Extension ("the Extensi
 **8. Contact Information**  
 If you have any questions or concerns about this Privacy Policy or our data practices, please contact us at:  
 - email: reynierramos280@gmail.com
-
----
-
-By using the WhatsApp Summarizer Extension, you agree to the terms of this Privacy Policy.
-
-If you need further details or adjustments, feel free to ask!
