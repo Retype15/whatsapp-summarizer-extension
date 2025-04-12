@@ -491,23 +491,33 @@ function handleSendChatMessage() {
         console.log(`Summarizer: Sending follow-up with ${historyToSend.length} AI history and ${waContextToSend.length} WA context.`);
 
         // Send for follow-up, expect response via onMessage listener ("displayAiResponse")
+                // Send for follow-up, expect response via onMessage listener ("displayAiResponse")
         chrome.runtime.sendMessage(
             { action: "sendFollowUpMessage", data: { history: historyToSend, waContext: waContextToSend } },
-            (response) => { // This callback handles *immediate* errors from background setup
+            (response) => { // This callback mainly catches *very* early synchronous errors
+                // Check for lastError, but specifically IGNORE the "port closed" error for this action,
+                // as the actual response comes via tabs.sendMessage.
                  if (chrome.runtime.lastError) {
-                     console.error("Summarizer Error sending follow-up:", chrome.runtime.lastError.message);
-                     const errMsg = getMsg("errorCommunication", [chrome.runtime.lastError.message]);
-                     showStatusInChat(errMsg, "error");
-                     displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errMsg}]`, "error", false); // Display error in chat
-                     cleanupUI(); // Crucial: Re-enable UI on immediate failure
+                     if (chrome.runtime.lastError.message?.includes("closed before a response was received")) {
+                         // This is expected for sendFollowUpMessage because background returns false. Ignore it.
+                         console.log("Summarizer: sendMessage port closed as expected for follow-up (response via tabs.sendMessage).");
+                     } else {
+                         // Log other unexpected errors during sending itself
+                         console.error("Summarizer: Unexpected runtime error sending follow-up:", chrome.runtime.lastError.message);
+                         const errMsg = getMsg("errorCommunication", [chrome.runtime.lastError.message]);
+                         showStatusInChat(errMsg, "error");
+                         displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errMsg}]`, "error", false);
+                         cleanupUI(); // Re-enable UI only on unexpected errors
+                     }
                  } else if (response && !response.success) {
+                     // Handle potential immediate failure response sent via sendResponse (unlikely for this action now)
                      console.error("Summarizer: Background reported immediate error on follow-up:", response.error);
                      const errMsg = getMsg("errorProcessing", [response.error]);
                      showStatusInChat(errMsg, "error");
-                     displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errMsg}]`, "error", false); // Display error in chat
-                     cleanupUI(); // Crucial: Re-enable UI on immediate failure
+                     displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errMsg}]`, "error", false);
+                     cleanupUI();
                  }
-                 // IMPORTANT: Don't call cleanupUI here on success, wait for the "displayAiResponse" message.
+                 // DO NOT call cleanupUI here otherwise. Wait for the displayAiResponse message.
             }
         );
     }
