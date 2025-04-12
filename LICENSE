@@ -1,21 +1,35 @@
-MIT License
-
 Copyright (c) 2025 Rety
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Permission is hereby granted, free of charge, to any person obtaining a copy of  
+this software and associated documentation files (the "Software"), to use, copy,  
+modify, and distribute the Software for non-commercial purposes, subject to the  
+following conditions:  
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. The Software and associated documentation files may not be used for commercial  
+purposes without prior written permission from the copyright owner. Explicit  
+authorization must be obtained, and a licensing fee may apply.  
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. The above copyright notice and this permission notice shall be included in all  
+copies or substantial portions of the Software.  
+
+3. Any derivative versions of the Software must clearly specify all modifications  
+made. Modified versions must maintain the original privacy policies and user data  
+protections outlined in this license.  
+
+4. This Software does not collect any user data of any kind. As an open-source  
+project, the full codebase is available on GitHub to ensure transparency and  
+build user trust. It is strictly illegal for any derivative versions of this  
+Software created by other developers to collect or use user data in any way.  
+
+5. This Software may include or depend on third-party libraries or code. Any such  
+components are subject to their respective licenses, which must also be followed.  
+
+6. To use the Software for commercial purposes, explicit authorization must be  
+obtained from the copyright owner, and a licensing fee may apply.  
+
+THE SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND, EXPRESS OR  
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS  
+FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR  
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER  
+IN AN ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN  
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
