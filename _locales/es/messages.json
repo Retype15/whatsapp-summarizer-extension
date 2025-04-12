@@ -1,0 +1,338 @@
+{
+  "extensionName": {
+    "message": "WhatsApp Resumen IA",
+    "description": "El nombre de la extensión."
+  },
+  "extensionDescription": {
+    "message": "Resume e interactúa con los chats de WhatsApp Web usando IA (Gemini).",
+    "description": "Descripción mostrada en la tienda/página de gestión de extensiones."
+  },
+  "panelTitle": {
+    "message": "Resumen IA",
+    "description": "Título para la cabecera del panel de chat."
+  },
+  "optionsButtonTitle": {
+    "message": "Abrir configuración",
+    "description": "Tooltip para el botón de opciones en la cabecera del panel."
+  },
+  "clearButtonTitle": {
+    "message": "Limpiar chat y contexto",
+    "description": "Tooltip para el botón de limpiar en la cabecera del panel."
+  },
+  "closeButtonTitle": {
+    "message": "Cerrar panel",
+    "description": "Tooltip para el botón de cerrar en la cabecera del panel."
+  },
+  "inputPlaceholder": {
+    "message": "Pide resumen (ej: \"10 msgs\") o pregunta...",
+    "description": "Texto placeholder para el área de entrada del chat."
+  },
+  "inputPlaceholderWaiting": {
+    "message": "Esperando respuesta de IA...",
+    "description": "Texto placeholder mostrado mientras se espera a la IA."
+  },
+  "inputTitle": {
+    "message": "Escribe tu pregunta o comando aquí (Enter para enviar, Shift+Enter para nueva línea)",
+    "description": "Tooltip para el textarea de entrada del chat."
+  },
+  "sendButtonTitle": {
+    "message": "Enviar mensaje",
+    "description": "Tooltip para el botón de enviar."
+  },
+  "initialGreeting": {
+    "message": "Hola. Pide un resumen (ej: 'resume 10 mensajes') o haz una pregunta.",
+    "description": "Mensaje inicial mostrado cuando el panel se abre por primera vez."
+  },
+  "statusGeneratingSummary": {
+    "message": "Ok, generando resumen de los últimos $COUNT$ mensajes...",
+    "description": "Mensaje de estado mostrado al iniciar la generación de resumen.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "statusSendingQuery": {
+    "message": "Enviando pregunta a la IA...",
+    "description": "Mensaje de estado mostrado al enviar una pregunta de seguimiento."
+  },
+  "statusInvalidCount": {
+    "message": "Número inválido '$COUNT_STR$', usando $DEFAULT_COUNT$ mensajes por defecto.",
+    "description": "Advertencia cuando el usuario introduce un número inválido para resumir.",
+    "placeholders": {
+      "count_str": { "content": "$1" },
+      "default_count": { "content": "$2" }
+    }
+  },
+   "statusErrorGeneric": {
+    "message": "Error",
+    "description": "Prefijo genérico de error."
+  },
+  "errorWhatsAppPanelNotFound": {
+    "message": "Error: Panel principal de WhatsApp no encontrado.",
+    "description": "Error cuando el área principal de chat no se detecta."
+  },
+  "errorNoMessagesFound": {
+    "message": "No se encontraron mensajes en este chat.",
+    "description": "Advertencia cuando no se detectan filas de mensajes."
+  },
+  "errorExtractionFailed": {
+    "message": "No se pudo extraer contenido de los mensajes recientes.",
+    "description": "Advertencia cuando existen filas de mensajes pero falla la extracción de contenido."
+  },
+  "errorPanelDisplayFailed": {
+    "message": "Fallo al mostrar el panel de chat.",
+    "description": "Error relacionado con mostrar el panel de la extensión."
+  },
+  "errorCommunication": {
+    "message": "Error de comunicación con el servicio: $DETAILS$",
+    "description": "Error comunicando con el script de fondo.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "errorProcessing": {
+    "message": "Error al procesar: $DETAILS$",
+    "description": "Error reportado por el script de fondo durante el procesado.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "errorUnexpectedResponse": {
+    "message": "Respuesta inesperada o fallida del script de fondo.",
+    "description": "Error por respuestas malformadas/inesperadas."
+  },
+  "errorInvalidApiResponse": {
+    "message": "Respuesta inválida recibida de la IA.",
+    "description": "Advertencia por datos inválidos de la IA."
+  },
+   "errorAiError": {
+    "message": "Error IA: $DETAILS$",
+    "description": "Error explícito de la API de IA.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "textMediaFile": {
+    "message": "[Archivo multimedia]",
+    "description": "Texto placeholder para mensajes multimedia."
+  },
+  "textSystemMessage": {
+    "message": "Sistema",
+    "description": "Nombre de remitente para eventos del sistema."
+  },
+  "textYou": {
+    "message": "Tú",
+    "description": "Nombre de remitente para el usuario."
+  },
+  "textIncoming": {
+    "message": "Entrante",
+    "description": "Nombre de remitente por defecto para mensajes entrantes cuando no se encuentra el nombre."
+  },
+  "textUnknown": {
+    "message": "Desconocido",
+    "description": "Nombre de remitente por defecto antes de cualquier identificación."
+  },
+  "textMissedVoiceCall": {
+    "message": "Llamada de voz perdida",
+    "description": "Nombre de remitente/evento para llamadas de voz perdidas."
+  },
+  "textMissedVideoCall": {
+    "message": "Videollamada perdida",
+    "description": "Nombre de remitente/evento para videollamadas perdidas."
+  },
+  "textMessageDeletedByYou": {
+    "message": "[Mensaje eliminado por ti]",
+    "description": "Placeholder para un mensaje eliminado por el usuario."
+  },
+  "textMessageDeleted": {
+    "message": "[Mensaje eliminado]",
+    "description": "Placeholder para un mensaje eliminado por otra persona."
+  },
+  "toggleButtonText": {
+    "message": "Chat IA",
+    "description": "Texto en el botón añadido a la cabecera de WhatsApp."
+  },
+  "toggleButtonTitle": {
+    "message": "Abrir/Cerrar panel de Resumen IA",
+    "description": "Tooltip para el botón añadido a la cabecera de WhatsApp."
+  },
+   "popupTitle": {
+     "message": "Resumir WhatsApp",
+     "description": "Título de la ventana emergente (popup) de la acción del navegador."
+   },
+   "popupMessageCountLabel": {
+     "message": "Número de mensajes:",
+     "description": "Etiqueta para la entrada numérica en el popup."
+   },
+   "popupSummarizeButton": {
+     "message": "Resumir Mensajes",
+     "description": "Texto en el botón de resumir en el popup."
+   },
+   "popupStatusReady": {
+     "message": "Listo.",
+     "description": "Texto de estado inicial en el popup."
+   },
+   "popupStatusRequesting": {
+     "message": "Solicitando resumen...",
+     "description": "Texto de estado cuando el popup inicia el resumen."
+   },
+   "popupStatusSending": {
+     "message": "Enviando orden para $COUNT$ mensajes...",
+     "description": "Texto de estado cuando se envía la orden al content script.",
+     "placeholders": { "count": { "content": "$1" } }
+   },
+   "popupStatusSent": {
+     "message": "¡Orden enviada! Revisa el panel en WhatsApp.",
+     "description": "Texto de estado cuando la orden se envía con éxito."
+   },
+   "popupErrorInvalidNumber": {
+     "message": "Error: Número inválido.",
+     "description": "Error en el popup por entrada inválida."
+   },
+   "popupErrorWhatsAppNotActive": {
+     "message": "Error: WhatsApp no activo.",
+     "description": "Error en el popup cuando no se encuentra la pestaña de WA."
+   },
+   "popupErrorCommunication": {
+     "message": "Error de comunicación.",
+     "description": "Error genérico de comunicación en el popup."
+   },
+   "popupErrorContentScript": {
+     "message": "Error: $DETAILS$",
+     "description": "Error reportado desde el content script.",
+     "placeholders": { "details": { "content": "$1" } }
+   },
+  "optionsTitle": {
+    "message": "Configuración - WhatsApp Resumen IA",
+    "description": "Título HTML para la página de opciones."
+  },
+  "optionsPageTitle": {
+    "message": "Configuración de WhatsApp Resumen IA",
+    "description": "Título principal H1 en la página de opciones."
+  },
+  "optionsApiKeySectionTitle": {
+    "message": "API Key de Google Gemini",
+    "description": "Título de sección para la configuración de la API key."
+  },
+  "optionsApiKeyLabel": {
+    "message": "Tu API Key:",
+    "description": "Etiqueta para el campo de entrada de la API key."
+  },
+  "optionsApiKeyPlaceholder": {
+    "message": "Introduce tu clave AIzaSy...",
+    "description": "Placeholder para el campo de entrada de la API key."
+  },
+  "optionsApiKeyToggleShow": {
+    "message": "Mostrar",
+    "description": "Texto para el botón de mostrar la API key."
+  },
+  "optionsApiKeyToggleHide": {
+    "message": "Ocultar",
+    "description": "Texto para el botón de ocultar la API key."
+  },
+  "optionsApiKeyDescription": {
+    "message": "Necesitas una API Key de <a href='https://aistudio.google.com/app/apikey' target='_blank' rel='noopener'>Google AI Studio</a> para usar Gemini. La clave se guarda de forma segura en el almacenamiento sincronizado de tu navegador.",
+    "description": "Texto descriptivo debajo de la entrada de la API key."
+  },
+  "optionsPromptsSectionTitle": {
+    "message": "Personalización de Prompts",
+    "description": "Título de sección para la configuración de prompts."
+  },
+  "optionsPromptsDescription": {
+    "message": "Puedes ajustar las instrucciones que se envían a la IA. Usa los placeholders indicados.",
+    "description": "Texto descriptivo para la sección de prompts."
+  },
+  "optionsSummaryPromptLabel": {
+    "message": "Prompt para Resumen Inicial:",
+    "description": "Etiqueta para el textarea del prompt de resumen."
+  },
+  "optionsSummaryPromptPlaceholderInfo": {
+    "message": "Placeholder disponible: <code>{messages}</code> (será reemplazado por la lista de mensajes de WhatsApp).",
+    "description": "Información de placeholder debajo del textarea del prompt de resumen."
+  },
+  "optionsFollowupPromptLabel": {
+    "message": "Prompt para Preguntas de Seguimiento:",
+    "description": "Etiqueta para el textarea del prompt de seguimiento."
+  },
+  "optionsFollowupPromptPlaceholderInfo": {
+    "message": "Placeholders disponibles: <code>{waContext}</code> (mensajes de WhatsApp), <code>{aiHistory}</code> (conversación con la IA).",
+    "description": "Información de placeholder debajo del textarea del prompt de seguimiento."
+  },
+  "optionsSaveButton": {
+    "message": "Guardar Configuración",
+    "description": "Texto en el botón de guardar."
+  },
+  "optionsStatusApiKeyFormatError": {
+    "message": "Error: La API Key parece tener un formato incorrecto. Debe empezar con 'AIzaSy'.",
+    "description": "Mensaje de estado cuando el formato de la API key es incorrecto."
+  },
+  "optionsStatusSummaryPromptPlaceholderError": {
+    "message": "Error: El prompt de resumen DEBE incluir el placeholder {messages}.",
+    "description": "Mensaje de estado cuando falta el placeholder en el prompt de resumen."
+  },
+  "optionsStatusFollowupPromptPlaceholderError": {
+    "message": "Error: El prompt de seguimiento DEBE incluir los placeholders {waContext} y {aiHistory}.",
+    "description": "Mensaje de estado cuando faltan placeholders en el prompt de seguimiento."
+  },
+  "optionsStatusSaveSuccess": {
+    "message": "Configuración guardada correctamente.",
+    "description": "Mensaje de estado al guardar con éxito."
+  },
+  "optionsStatusSaveError": {
+    "message": "Error al guardar: $DETAILS$",
+    "description": "Mensaje de estado al fallar el guardado.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "optionsStatusLoadError": {
+    "message": "Error al cargar la configuración: $DETAILS$",
+    "description": "Mensaje de estado al fallar la carga.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "errorApiKeyNotConfigured": {
+    "message": "Error: La API Key de Gemini no está configurada. Por favor, configúrala en las opciones de la extensión.",
+    "description": "Mensaje de error cuando falta la API key (enviado al content script)."
+  },
+  "errorApiKeyNotProvidedInternal": {
+    "message": "Error Interno: API Key de Gemini no proporcionada.",
+    "description": "Error lanzado internamente en el script de fondo si falta la clave."
+  },
+  "errorApiKeyInvalid": {
+    "message": "Error API Gemini: La API Key configurada no es válida. Revisa las opciones.",
+    "description": "Error lanzado cuando la API devuelve error de clave inválida."
+  },
+  "errorApiRateLimit": {
+    "message": "Error API Gemini: Se ha excedido la cuota de uso (Rate limit). Inténtalo más tarde.",
+    "description": "Error lanzado cuando la API devuelve error de límite de tasa."
+  },
+  "errorApiServer": {
+    "message": "Error API Gemini: Error del servidor ($STATUS$). Inténtalo más tarde.",
+    "description": "Error lanzado por errores del lado del servidor de la API.",
+    "placeholders": { "status": { "content": "$1" } }
+  },
+  "errorApiGeneric": {
+    "message": "Error API Gemini: $STATUS$ - $DETAILS$",
+    "description": "Error genérico de la API.",
+    "placeholders": {
+        "status": { "content": "$1" },
+        "details": { "content": "$2" }
+    }
+  },
+  "errorApiResponseNotGenerated": {
+    "message": "[Respuesta no generada. Razón: $REASON$]",
+    "description": "Texto placeholder cuando la API finaliza sin generar contenido.",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "errorApiResponseEmpty": {
+    "message": "[Respuesta de IA vacía o inesperada]",
+    "description": "Texto placeholder para respuesta vacía de la API."
+  },
+  "errorApiRequestBlocked": {
+    "message": "[Solicitud bloqueada por filtro de seguridad. Razón: $REASON$]",
+    "description": "Texto placeholder cuando la API bloquea la solicitud por seguridad.",
+    "placeholders": { "reason": { "content": "$1" } }
+  },
+  "errorApiResponseUnexpectedFormat": {
+    "message": "[Formato de respuesta inesperado de Gemini]",
+    "description": "Texto placeholder para respuesta malformada de la API."
+  },
+  "errorApiTimeout": {
+    "message": "La solicitud a la IA tardó demasiado en responder (Timeout).",
+    "description": "Error lanzado en timeout de fetch a la API."
+  }
+}

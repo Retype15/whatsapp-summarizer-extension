@@ -2,8 +2,10 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Configuración - WhatsApp Summarizer IA</title>
+    <!-- Use i18n for title -->
+    <title>__MSG_optionsTitle__</title>
     <style>
+        /* CSS remains the same */
         body {
             font-family: sans-serif;
             padding: 20px;
@@ -48,7 +50,7 @@
             font-family: monospace; /* Mejor para prompts */
             line-height: 1.5;
         }
-        button {
+        button#save { /* Target only the save button for WA colors */
             padding: 10px 20px;
             background-color: #128C7E; /* Verde más oscuro */
             color: white;
@@ -57,8 +59,10 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.2s;
+            display: block; /* Make it block */
+            margin: 10px auto 0 auto; /* Center it */
         }
-        button:hover {
+        button#save:hover {
             background-color: #075E54;
         }
         #status {
@@ -92,41 +96,51 @@
             cursor: pointer;
             color: #075E54;
             text-decoration: underline;
+            background: none; /* Make it look like a link */
+            border: none;
+            padding: 0;
          }
     </style>
 </head>
 <body>
 
-    <h1>Configuración de WhatsApp Summarizer IA</h1>
+    <!-- Use i18n for H1 -->
+    <h1>__MSG_optionsPageTitle__</h1>
 
     <div class="option-group">
-        <h2>API Key de Google Gemini</h2>
-        <label for="apiKey">Tu API Key:</label>
-        <input type="password" id="apiKey" placeholder="Introduce tu clave AIzaSy...">
-        <span class="toggle-visibility" id="toggleApiKey">Mostrar</span>
-        <p class="description">
-            Necesitas una API Key de <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> para usar Gemini.
-            La clave se guarda de forma segura en el almacenamiento sincronizado de tu navegador.
-        </p>
+        <!-- Use i18n for section title -->
+        <h2>__MSG_optionsApiKeySectionTitle__</h2>
+        <!-- Use i18n for label -->
+        <label for="apiKey">__MSG_optionsApiKeyLabel__</label>
+        <!-- Use i18n for placeholder -->
+        <input type="password" id="apiKey" placeholder="__MSG_optionsApiKeyPlaceholder__">
+        <!-- Text content set by JS -->
+        <button class="toggle-visibility" id="toggleApiKey">__MSG_optionsApiKeyToggleShow__</button>
+        <!-- Use i18n for description (allows HTML) -->
+        <p class="description">__MSG_optionsApiKeyDescription__</p>
     </div>
 
     <div class="option-group">
-        <h2>Personalización de Prompts</h2>
-        <p class="description">
-            Puedes ajustar las instrucciones que se envían a la IA. Usa los placeholders indicados.
-        </p>
+        <!-- Use i18n for section title -->
+        <h2>__MSG_optionsPromptsSectionTitle__</h2>
+        <!-- Use i18n for description -->
+        <p class="description">__MSG_optionsPromptsDescription__</p>
 
-        <label for="summaryPrompt">Prompt para Resumen Inicial:</label>
+        <!-- Use i18n for label -->
+        <label for="summaryPrompt">__MSG_optionsSummaryPromptLabel__</label>
         <textarea id="summaryPrompt" spellcheck="false"></textarea>
-        <p class="placeholder-info">Placeholder disponible: <code>{messages}</code> (será reemplazado por la lista de mensajes de WhatsApp).</p>
+        <!-- Use i18n for placeholder info (allows HTML) -->
+        <p class="placeholder-info">__MSG_optionsSummaryPromptPlaceholderInfo__</p>
 
-        <label for="followUpPrompt">Prompt para Preguntas de Seguimiento:</label>
+        <!-- Use i18n for label -->
+        <label for="followUpPrompt">__MSG_optionsFollowupPromptLabel__</label>
         <textarea id="followUpPrompt" spellcheck="false"></textarea>
-        <p class="placeholder-info">Placeholders disponibles: <code>{waContext}</code> (mensajes de WhatsApp), <code>{aiHistory}</code> (conversación con la IA).</p>
-
+        <!-- Use i18n for placeholder info (allows HTML) -->
+        <p class="placeholder-info">__MSG_optionsFollowupPromptPlaceholderInfo__</p>
     </div>
 
-    <button id="save">Guardar Configuración</button>
+    <!-- Use i18n for button text -->
+    <button id="save">__MSG_optionsSaveButton__</button>
     <div id="status"></div>
 
     <script src="options.js"></script>

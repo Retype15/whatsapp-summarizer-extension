@@ -1,0 +1,338 @@
+{
+  "extensionName": {
+    "message": "WhatsApp Chat Summarizer AI",
+    "description": "The name of the extension."
+  },
+  "extensionDescription": {
+    "message": "Summarize and interact with WhatsApp Web chats using AI (Gemini).",
+    "description": "Description shown in the extension store/management page."
+  },
+  "panelTitle": {
+    "message": "AI Summary",
+    "description": "Title for the chat panel header."
+  },
+  "optionsButtonTitle": {
+    "message": "Open settings",
+    "description": "Tooltip for the options button in the panel header."
+  },
+  "clearButtonTitle": {
+    "message": "Clear chat and context",
+    "description": "Tooltip for the clear button in the panel header."
+  },
+  "closeButtonTitle": {
+    "message": "Close panel",
+    "description": "Tooltip for the close button in the panel header."
+  },
+  "inputPlaceholder": {
+    "message": "Request summary (e.g., \"10 msgs\") or ask...",
+    "description": "Placeholder text for the chat input area."
+  },
+  "inputPlaceholderWaiting": {
+    "message": "Waiting for AI response...",
+    "description": "Placeholder text shown while waiting for the AI."
+  },
+  "inputTitle": {
+    "message": "Type your question or command here (Enter to send, Shift+Enter for new line)",
+    "description": "Tooltip for the chat input textarea."
+  },
+  "sendButtonTitle": {
+    "message": "Send message",
+    "description": "Tooltip for the send button."
+  },
+  "initialGreeting": {
+    "message": "Hello. Request a summary (e.g., 'summarize 10 messages') or ask a question.",
+    "description": "Initial message shown when the panel is opened for the first time."
+  },
+  "statusGeneratingSummary": {
+    "message": "Ok, generating summary of the last $COUNT$ messages...",
+    "description": "Status message shown when starting summary generation.",
+    "placeholders": {
+      "count": {
+        "content": "$1",
+        "example": "10"
+      }
+    }
+  },
+  "statusSendingQuery": {
+    "message": "Sending question to AI...",
+    "description": "Status message shown when sending a follow-up question."
+  },
+  "statusInvalidCount": {
+    "message": "Invalid number '$COUNT_STR$', using $DEFAULT_COUNT$ messages by default.",
+    "description": "Warning when user enters an invalid number for summary.",
+    "placeholders": {
+      "count_str": { "content": "$1" },
+      "default_count": { "content": "$2" }
+    }
+  },
+  "statusErrorGeneric": {
+    "message": "Error",
+    "description": "Generic error prefix."
+  },
+  "errorWhatsAppPanelNotFound": {
+    "message": "Error: WhatsApp main panel not found.",
+    "description": "Error when the main chat area isn't detected."
+  },
+  "errorNoMessagesFound": {
+    "message": "No messages found in this chat.",
+    "description": "Warning when no message rows are detected."
+  },
+  "errorExtractionFailed": {
+    "message": "Could not extract content from recent messages.",
+    "description": "Warning when messages rows exist but content extraction fails."
+  },
+  "errorPanelDisplayFailed": {
+    "message": "Failed to display chat panel.",
+    "description": "Error related to showing the extension's panel."
+  },
+  "errorCommunication": {
+    "message": "Communication error with the service: $DETAILS$",
+    "description": "Error communicating with the background script.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "errorProcessing": {
+    "message": "Processing error: $DETAILS$",
+    "description": "Error reported by the background script during processing.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "errorUnexpectedResponse": {
+    "message": "Unexpected or failed response from the background script.",
+    "description": "Error for malformed/unexpected responses."
+  },
+  "errorInvalidApiResponse": {
+    "message": "Invalid response received from AI.",
+    "description": "Warning for invalid data from the AI."
+  },
+  "errorAiError": {
+    "message": "AI Error: $DETAILS$",
+    "description": "Error explicitly from the AI API.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "textMediaFile": {
+    "message": "[Media file]",
+    "description": "Placeholder text for media messages."
+  },
+  "textSystemMessage": {
+    "message": "System",
+    "description": "Sender name for system events."
+  },
+  "textYou": {
+    "message": "You",
+    "description": "Sender name for the user."
+  },
+  "textIncoming": {
+    "message": "Incoming",
+    "description": "Default sender name for incoming messages when name isn't found."
+  },
+  "textUnknown": {
+    "message": "Unknown",
+    "description": "Default sender name before any identification."
+  },
+  "textMissedVoiceCall": {
+    "message": "Missed voice call",
+    "description": "Sender/Event name for missed voice calls."
+  },
+  "textMissedVideoCall": {
+    "message": "Missed video call",
+    "description": "Sender/Event name for missed video calls."
+  },
+  "textMessageDeletedByYou": {
+    "message": "[Message deleted by you]",
+    "description": "Placeholder for a message deleted by the user."
+  },
+  "textMessageDeleted": {
+    "message": "[Message deleted]",
+    "description": "Placeholder for a message deleted by someone else."
+  },
+  "toggleButtonText": {
+    "message": "AI Chat",
+    "description": "Text on the button added to the WhatsApp header."
+  },
+  "toggleButtonTitle": {
+    "message": "Open/Close AI Summary panel",
+    "description": "Tooltip for the button added to the WhatsApp header."
+  },
+  "popupTitle": {
+     "message": "Summarize WhatsApp",
+     "description": "Title of the browser action popup window."
+  },
+  "popupMessageCountLabel": {
+     "message": "Number of messages:",
+     "description": "Label for the number input in the popup."
+  },
+  "popupSummarizeButton": {
+     "message": "Summarize Messages",
+     "description": "Text on the summarize button in the popup."
+  },
+  "popupStatusReady": {
+     "message": "Ready.",
+     "description": "Initial status text in the popup."
+  },
+  "popupStatusRequesting": {
+     "message": "Requesting summary...",
+     "description": "Status text when popup initiates summary."
+  },
+  "popupStatusSending": {
+     "message": "Sending command for $COUNT$ messages...",
+     "description": "Status text when command is sent to content script.",
+     "placeholders": { "count": { "content": "$1" } }
+  },
+  "popupStatusSent": {
+     "message": "Command sent! Check the panel in WhatsApp.",
+     "description": "Status text on successful command send."
+  },
+  "popupErrorInvalidNumber": {
+     "message": "Error: Invalid number.",
+     "description": "Error in popup for invalid input."
+  },
+  "popupErrorWhatsAppNotActive": {
+     "message": "Error: WhatsApp not active.",
+     "description": "Error in popup when WA tab isn't found."
+  },
+  "popupErrorCommunication": {
+     "message": "Communication error.",
+     "description": "Generic communication error in popup."
+  },
+  "popupErrorContentScript": {
+     "message": "Error: $DETAILS$",
+     "description": "Error reported back from the content script.",
+     "placeholders": { "details": { "content": "$1" } }
+  },
+  "optionsTitle": {
+     "message": "Settings - WhatsApp Summarizer AI",
+     "description": "HTML Title for the options page."
+  },
+  "optionsPageTitle": {
+     "message": "WhatsApp Summarizer AI Settings",
+     "description": "Main H1 title on the options page."
+  },
+  "optionsApiKeySectionTitle": {
+     "message": "Google Gemini API Key",
+     "description": "Section title for API key settings."
+  },
+  "optionsApiKeyLabel": {
+     "message": "Your API Key:",
+     "description": "Label for the API key input field."
+  },
+  "optionsApiKeyPlaceholder": {
+     "message": "Enter your AIzaSy... key",
+     "description": "Placeholder for the API key input field."
+  },
+  "optionsApiKeyToggleShow": {
+     "message": "Show",
+     "description": "Text for the button to show the API key."
+  },
+  "optionsApiKeyToggleHide": {
+     "message": "Hide",
+     "description": "Text for the button to hide the API key."
+  },
+  "optionsApiKeyDescription": {
+     "message": "You need an API Key from <a href='https://aistudio.google.com/app/apikey' target='_blank' rel='noopener'>Google AI Studio</a> to use Gemini. The key is stored securely in your browser's sync storage.",
+     "description": "Description text below the API key input."
+  },
+  "optionsPromptsSectionTitle": {
+     "message": "Prompt Customization",
+     "description": "Section title for prompt settings."
+  },
+  "optionsPromptsDescription": {
+     "message": "You can adjust the instructions sent to the AI. Use the indicated placeholders.",
+     "description": "Description text for the prompt section."
+  },
+  "optionsSummaryPromptLabel": {
+     "message": "Initial Summary Prompt:",
+     "description": "Label for the summary prompt textarea."
+  },
+  "optionsSummaryPromptPlaceholderInfo": {
+     "message": "Available placeholder: <code>{messages}</code> (will be replaced by the list of WhatsApp messages).",
+     "description": "Placeholder info below the summary prompt textarea."
+  },
+  "optionsFollowupPromptLabel": {
+     "message": "Follow-up Question Prompt:",
+     "description": "Label for the follow-up prompt textarea."
+  },
+  "optionsFollowupPromptPlaceholderInfo": {
+     "message": "Available placeholders: <code>{waContext}</code> (WhatsApp messages), <code>{aiHistory}</code> (conversation with the AI).",
+     "description": "Placeholder info below the follow-up prompt textarea."
+  },
+  "optionsSaveButton": {
+     "message": "Save Settings",
+     "description": "Text on the save button."
+  },
+  "optionsStatusApiKeyFormatError": {
+     "message": "Error: The API Key seems to have an incorrect format. It should start with 'AIzaSy'.",
+     "description": "Status message when API key format is wrong."
+  },
+  "optionsStatusSummaryPromptPlaceholderError": {
+     "message": "Error: The summary prompt MUST include the {messages} placeholder.",
+     "description": "Status message when summary prompt is missing placeholder."
+  },
+  "optionsStatusFollowupPromptPlaceholderError": {
+     "message": "Error: The follow-up prompt MUST include the {waContext} and {aiHistory} placeholders.",
+     "description": "Status message when follow-up prompt is missing placeholders."
+  },
+  "optionsStatusSaveSuccess": {
+     "message": "Settings saved successfully.",
+     "description": "Status message on successful save."
+  },
+  "optionsStatusSaveError": {
+     "message": "Error saving: $DETAILS$",
+     "description": "Status message on save error.",
+     "placeholders": { "details": { "content": "$1" } }
+  },
+  "optionsStatusLoadError": {
+    "message": "Error loading settings: $DETAILS$",
+    "description": "Status message on load error.",
+    "placeholders": { "details": { "content": "$1" } }
+  },
+  "errorApiKeyNotConfigured": {
+     "message": "Error: Gemini API Key is not configured. Please set it in the extension options.",
+     "description": "Error message when the API key is missing (sent to content script)."
+   },
+   "errorApiKeyNotProvidedInternal": {
+     "message": "Internal Error: Gemini API Key not provided.",
+     "description": "Error thrown internally in background script if key is missing."
+   },
+   "errorApiKeyInvalid": {
+     "message": "Gemini API Error: The configured API Key is invalid. Please check the options.",
+     "description": "Error thrown when API returns invalid key error."
+   },
+   "errorApiRateLimit": {
+     "message": "Gemini API Error: Usage quota exceeded (Rate limit). Please try again later.",
+     "description": "Error thrown when API returns rate limit error."
+   },
+   "errorApiServer": {
+     "message": "Gemini API Error: Server error ($STATUS$). Please try again later.",
+     "description": "Error thrown for API server-side errors.",
+     "placeholders": { "status": { "content": "$1" } }
+   },
+   "errorApiGeneric": {
+     "message": "Gemini API Error: $STATUS$ - $DETAILS$",
+     "description": "Generic API error.",
+     "placeholders": {
+         "status": { "content": "$1" },
+         "details": { "content": "$2" }
+     }
+   },
+   "errorApiResponseNotGenerated": {
+     "message": "[Response not generated. Reason: $REASON$]",
+     "description": "Placeholder text when API finishes without generating content.",
+     "placeholders": { "reason": { "content": "$1" } }
+   },
+   "errorApiResponseEmpty": {
+     "message": "[Empty or unexpected AI response]",
+     "description": "Placeholder text for empty API response."
+   },
+   "errorApiRequestBlocked": {
+     "message": "[Request blocked by safety filter. Reason: $REASON$]",
+     "description": "Placeholder text when API blocks request due to safety.",
+     "placeholders": { "reason": { "content": "$1" } }
+   },
+   "errorApiResponseUnexpectedFormat": {
+     "message": "[Unexpected response format from Gemini]",
+     "description": "Placeholder text for malformed API response."
+   },
+   "errorApiTimeout": {
+     "message": "The request to the AI took too long to respond (Timeout).",
+     "description": "Error thrown on API fetch timeout."
+   }
+}

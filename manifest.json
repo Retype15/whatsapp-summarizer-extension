@@ -1,9 +1,10 @@
-// manifest.json - MODIFICADO v0.4.1
+// manifest.json - MODIFICADO v0.4.3 - Added i18n default_locale
 {
   "manifest_version": 3,
-  "name": "WhatsApp Chat Summarizer IA",
-  "version": "0.4.1",
-  "description": "Resume e interactúa con chats de WhatsApp Web usando IA (Gemini).",
+  "name": "__MSG_extensionName__", // Use message key
+  "version": "0.4.3", // Incremented version
+  "description": "__MSG_extensionDescription__", // Use message key
+  "default_locale": "en", // Specify English as the default
   "permissions": [
     "scripting",
     "storage",
@@ -28,7 +29,7 @@
       "16": "icons/icon16.png",
       "48": "icons/icon48.png"
     },
-    "default_title": "Resumir/Chatear con IA",
+    "default_title": "__MSG_popupTitle__", // Use message key
     "default_popup": "popup.html"
   },
   "options_page": "options.html",
