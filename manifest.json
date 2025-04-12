@@ -1,0 +1,40 @@
+// manifest.json - MODIFICADO v0.4.1
+{
+  "manifest_version": 3,
+  "name": "WhatsApp Chat Summarizer IA",
+  "version": "0.4.1",
+  "description": "Resume e interactúa con chats de WhatsApp Web usando IA (Gemini).",
+  "permissions": [
+    "scripting",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content_script.js"],
+      "css": ["chat_styles.css"]
+    }
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png"
+    },
+    "default_title": "Resumir/Chatear con IA",
+    "default_popup": "popup.html"
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}

@@ -1,0 +1,260 @@
+/* chat_styles.css - Estilos para el panel de chat de la extensión v0.3.0 */
+
+#summarizer-chat-panel {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 350px;
+    max-height: 500px;
+    background-color: var(--background-default, #f0f2f5); /* Fondo claro por defecto WA */
+    color: var(--primary-strong, #111b21); /* Texto oscuro por defecto WA */
+    border: 1px solid var(--border-stronger, #d1d7db);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* Para border-radius */
+    font-size: 14px;
+    transition: transform 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+#summarizer-chat-panel.hidden {
+    transform: translateY(20px) scale(0.95); /* Efecto sutil */
+    opacity: 0;
+    pointer-events: none;
+}
+
+ /* Estilos modo oscuro (si WhatsApp los aplica) */
+body.dark #summarizer-chat-panel {
+     background-color: var(--rich-text-panel-background, #202c33); /* Fondo oscuro */
+     color: var(--primary-strong, #e9edef); /* Texto claro */
+     border: 1px solid var(--border-list, #2f3b44);
+ }
+
+#summarizer-chat-header {
+    padding: 8px 12px;
+    background-color: var(--panel-header-background, #008069); /* Verde WA */
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: grab; /* Para posible drag futuro */
+    gap: 8px; /* Espacio entre elementos del header */
+}
+
+body.dark #summarizer-chat-header {
+     background-color: var(--panel-header-background-deeper, #1f2c34); /* Ajustar si existe variable mejor */
+}
+
+#summarizer-chat-header h4 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    white-space: nowrap; /* Evitar que el título se rompa */
+     overflow: hidden;
+     text-overflow: ellipsis;
+}
+
+ /* Contenedor para botones derechos */
+ .summarizer-header-buttons {
+     display: flex;
+     align-items: center;
+     gap: 5px; /* Espacio entre botones */
+     flex-shrink: 0; /* Evitar que se encojan */
+ }
+
+/* Botones genéricos en header */
+.summarizer-header-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 0 5px;
+    line-height: 1; /* Alinear mejor */
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+ .summarizer-header-btn:hover {
+     opacity: 1;
+ }
+
+#summarizer-chat-clear-btn {
+     font-size: 16px; /* Un poco más pequeño que cerrar */
+     /* Idealmente usar un SVG aquí */
+}
+
+#summarizer-chat-close-btn { /* Ya tiene el estilo base .summarizer-header-btn */ }
+
+#summarizer-chat-messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-bottom: 1px solid var(--border-stronger, #d1d7db);
+}
+
+ body.dark #summarizer-chat-messages {
+    border-bottom: 1px solid var(--border-list, #2f3b44);
+ }
+
+.chat-message {
+    padding: 8px 12px;
+    border-radius: 7px;
+    max-width: 85%;
+    word-wrap: break-word; /* Asegura que palabras largas se rompan */
+    white-space: pre-wrap; /* Respeta saltos de línea y espacios */
+    font-size: 13.5px; /* Ligeramente más pequeño que el chat principal */
+     line-height: 1.4;
+}
+
+.chat-message.user-message {
+    background-color: var(--outgoing-background, #d9fdd3);
+    align-self: flex-end; /* Mensajes del usuario a la derecha */
+    color: var(--primary-strong, #111b21); /* Texto oscuro en burbuja clara */
+}
+
+ body.dark .chat-message.user-message {
+    background-color: var(--outgoing-background, #005c4b);
+    color: var(--primary-strong, #e9edef); /* Texto claro en burbuja oscura */
+ }
+
+.chat-message.ai-message {
+    background-color: var(--message-primary-background, #ffffff);
+    align-self: flex-start; /* Mensajes de la IA a la izquierda */
+    color: var(--primary-strong, #111b21); /* Texto oscuro en burbuja blanca */
+}
+
+ body.dark .chat-message.ai-message {
+    background-color: var(--incoming-background, #2a3942);
+    color: var(--primary-strong, #e9edef); /* Texto claro en burbuja oscura */
+ }
+
+ .chat-message.status-message {
+    background-color: transparent;
+    color: var(--text-secondary-lighter, #667781);
+    font-style: italic;
+    font-size: 0.9em;
+    text-align: center;
+    align-self: center;
+    padding: 4px;
+ }
+
+ .chat-message.error-message {
+     background-color: var(--background-danger-hover, #fad7d7); /* Usar variable de WA si existe */
+     color: var(--text-danger, #9e0a0a);
+     font-weight: bold;
+     align-self: stretch; /* Ocupar ancho */
+     text-align: center;
+     border: 1px solid var(--border-danger, #e8a0a0);
+ }
+
+ body.dark .chat-message.error-message {
+     background-color: var(--background-danger, #4b1818);
+     color: var(--text-danger, #ff8a8a);
+      border: 1px solid var(--border-danger, #8b3a3a);
+ }
+
+#summarizer-chat-input-area {
+    display: flex;
+    padding: 10px;
+    gap: 8px;
+    align-items: flex-end; /* Alinear botones abajo si textarea crece */
+     background-color: var(--background-default, #f0f2f5); /* Fondo del input area */
+     border-top: 1px solid var(--compose-input-border, #d1d7db);
+}
+
+body.dark #summarizer-chat-input-area {
+     background-color: var(--rich-text-panel-background, #202c33);
+     border-top: 1px solid var(--border-list, #2f3b44);
+ }
+
+#summarizer-chat-input {
+    flex-grow: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border-stronger, #d1d7db);
+    border-radius: 18px;
+    resize: none; /* Evitar que el usuario redimensione */
+    font-size: 14px;
+    line-height: 1.4;
+    min-height: 20px; /* Altura mínima de 1 línea */
+    max-height: 80px; /* Altura máxima antes de scroll (aprox 4 líneas) */
+    overflow-y: auto; /* Scroll si excede max-height */
+    background-color: var(--input-background, #ffffff); /* Usar var si existe */
+    color: var(--primary-strong, #111b21);
+}
+
+ body.dark #summarizer-chat-input {
+    background-color: var(--input-search-background-active, #2a3942);
+    color: var(--primary-strong, #e9edef);
+    border: 1px solid var(--border-list, #2f3b44);
+ }
+
+  #summarizer-chat-input::placeholder {
+     color: var(--text-secondary-lighter, #8696a0);
+  }
+
+ body.dark #summarizer-chat-input::placeholder {
+     color: var(--text-secondary-lighter, #8696a0);
+ }
+
+#summarizer-chat-send-btn {
+    padding: 0; /* Padding se controla con tamaño y align-items */
+    border: none;
+    border-radius: 50%; /* Botón redondo */
+    background-color: var(--button-primary-background, #008069);
+    color: white;
+    cursor: pointer;
+    font-size: 16px; /* Icono/Texto */
+    flex-shrink: 0;
+    height: 36px; /* Tamaño consistente */
+    width: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+#summarizer-chat-send-btn:hover {
+    background-color: var(--button-primary-background-hover, #00705c);
+}
+
+ /* Icono de enviar (SVG simple) */
+#summarizer-chat-send-btn svg {
+    width: 20px;
+    height: 20px;
+    fill: white;
+}
+
+ /* Estilos para el botón en la cabecera de WA */
+#summarizer-toggle-button-page {
+    padding: 4px 10px;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--button-secondary, #e2e8ea); /* Color secundario */
+    color: var(--button-secondary-text, #111b21); /* Texto oscuro */
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1;
+    margin-left: 8px; /* Separación */
+    transition: background-color 0.2s;
+}
+
+ #summarizer-toggle-button-page:hover {
+    background-color: var(--button-secondary-hover, #d1d7db);
+ }
+
+ body.dark #summarizer-toggle-button-page {
+    background-color: var(--button-secondary, #2a3942);
+    color: var(--primary-strong, #e9edef);
+ }
+
+  body.dark #summarizer-toggle-button-page:hover {
+     background-color: var(--button-secondary-hover, #32414b);
+  }

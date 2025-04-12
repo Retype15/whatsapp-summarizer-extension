@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Configuración - WhatsApp Summarizer IA</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 20px;
+            max-width: 600px;
+            margin: auto;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+            color: #075E54; /* Verde WhatsApp */
+        }
+        .option-group {
+            background-color: white;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 95%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+         input[type="password"] { /* Estilo específico para la API key */
+             font-family: monospace;
+         }
+        textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: monospace; /* Mejor para prompts */
+            line-height: 1.5;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #128C7E; /* Verde más oscuro */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.2s;
+        }
+        button:hover {
+            background-color: #075E54;
+        }
+        #status {
+            margin-top: 15px;
+            font-weight: bold;
+            text-align: center;
+            min-height: 20px; /* Evita saltos de layout */
+        }
+        .status-success {
+            color: green;
+        }
+        .status-error {
+            color: red;
+        }
+        p.description {
+            font-size: 0.9em;
+            color: #666;
+            margin-top: -10px;
+            margin-bottom: 15px;
+        }
+         .placeholder-info {
+             font-style: italic;
+             color: #888;
+             font-size: 0.85em;
+             margin-top: -10px;
+             margin-bottom: 10px;
+         }
+         .toggle-visibility {
+            font-size: 0.8em;
+            margin-left: 10px;
+            cursor: pointer;
+            color: #075E54;
+            text-decoration: underline;
+         }
+    </style>
+</head>
+<body>
+
+    <h1>Configuración de WhatsApp Summarizer IA</h1>
+
+    <div class="option-group">
+        <h2>API Key de Google Gemini</h2>
+        <label for="apiKey">Tu API Key:</label>
+        <input type="password" id="apiKey" placeholder="Introduce tu clave AIzaSy...">
+        <span class="toggle-visibility" id="toggleApiKey">Mostrar</span>
+        <p class="description">
+            Necesitas una API Key de <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Google AI Studio</a> para usar Gemini.
+            La clave se guarda de forma segura en el almacenamiento sincronizado de tu navegador.
+        </p>
+    </div>
+
+    <div class="option-group">
+        <h2>Personalización de Prompts</h2>
+        <p class="description">
+            Puedes ajustar las instrucciones que se envían a la IA. Usa los placeholders indicados.
+        </p>
+
+        <label for="summaryPrompt">Prompt para Resumen Inicial:</label>
+        <textarea id="summaryPrompt" spellcheck="false"></textarea>
+        <p class="placeholder-info">Placeholder disponible: <code>{messages}</code> (será reemplazado por la lista de mensajes de WhatsApp).</p>
+
+        <label for="followUpPrompt">Prompt para Preguntas de Seguimiento:</label>
+        <textarea id="followUpPrompt" spellcheck="false"></textarea>
+        <p class="placeholder-info">Placeholders disponibles: <code>{waContext}</code> (mensajes de WhatsApp), <code>{aiHistory}</code> (conversación con la IA).</p>
+
+    </div>
+
+    <button id="save">Guardar Configuración</button>
+    <div id="status"></div>
+
+    <script src="options.js"></script>
+</body>
+</html>
