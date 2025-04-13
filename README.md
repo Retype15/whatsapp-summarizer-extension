@@ -16,7 +16,7 @@ Summarize and interact with your WhatsApp Web chats using the power of Google Ge
 *   **Integrated Panel:** Interact with the AI through a convenient panel that appears directly on the WhatsApp Web interface.
 *   **Configurable AI:**
     *   Requires your own Google Gemini API Key for processing.
-    *   Select your preferred Gemini model (1.5 Flash, 1.5 Pro, etc.).
+    *   Select your preferred Gemini model (1.5 Flash, 2.0 Flash, 2.5 Pro Exp, etc.).
     *   Customize the AI's behavior with a System Instruction prompt.
 *   **Markdown Support:** AI responses are rendered with basic Markdown formatting (bold, italics, code, lists).
 *   **Copy Functionality:** Easily copy the text content of any message in the AI chat panel.
@@ -32,9 +32,8 @@ As this extension is not yet on the Chrome Web Store, follow these steps to inst
 
 1.  **Download/Clone:** Download this repository as a ZIP file and extract it, or clone the repository using Git:
     ```bash
-    git clone https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME.git
+    git clone https://github.com/Retype15/whatsapp-summarizer-extension.git
     ```
-    (Replace `YOUR_USERNAME/YOUR_REPOSITORY_NAME` with your actual GitHub details)
 2.  **Open Chrome Extensions:** Open Google Chrome, type `chrome://extensions` in the address bar, and press Enter.
 3.  **Enable Developer Mode:** Toggle the "Developer mode" switch in the top-right corner ON.
 4.  **Load Unpacked:** Click the "Load unpacked" button that appears.
@@ -64,23 +63,19 @@ Before using the AI features, you **must** configure your API key.
 3.  **Configure Settings:**
     *   **Google Gemini API Key:** Paste your API key obtained from Google AI Studio.
     *   **Select Gemini Model:** Choose the AI model you want to use from the dropdown. The available options include:
-        *   `gemini-1.5-flash` (Default, fast)
-        *   `gemini-1.5-pro` (More capable)
+        *   `gemini-2.0-flash` (Default, fast)
+        *   `gemini-2.0-flash-lite` (very fast)
+        *   `gemini-1.5-flash` (fast)
+        *   `gemini-1.5-pro` (More capable than 1.5-flash)
         *   `gemini-1.5-flash-latest`
         *   `gemini-1.5-pro-latest`
-        *   `gemini-1.0-pro`
+        *   `gemini-1.5-flash-8b` (very basic and fast model, not recomended)
+        *   `gemini-2.5-pro-preview-03-25` (The most intelligent, reasoning model, Experimental)
+        *   `gemini-2.0-flash-thinking-exp-01-21` (Reasoning model, Experimental)
+        *   `gemini-2.0-flash-exp-image-generation` (Generate and edit images in seconds, dont working for now, Very experimental)
         *(Note: Availability and performance of models can vary).*
     *   **System Instruction:** Provide general instructions to guide the AI's role, tone, and task focus (e.g., "You are a helpful assistant summarizing chats concisely").
 4.  **Save:** Click "Save Settings".
-
-## 📸 Screenshots
-
-*(It's highly recommended to add screenshots here!)*
-
-*   [Screenshot of the "AI Chat" button in the WhatsApp header]
-*   [Screenshot of the AI chat panel open next to a WhatsApp chat]
-*   [Screenshot of a summary generated in the panel]
-*   [Screenshot of the Options page]
 
 ## 💻 Technology Stack
 
@@ -126,6 +121,6 @@ Contributions, issues, and feature requests are welcome!
 
 Reynier Ramos - [reynierramos280@gmail.com](mailto:reynierramos280@gmail.com)
 
-Project Link: [https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME](https://github.com/YOUR_USERNAME/YOUR_REPOSITORY_NAME) *(<- Update this link!)*
+Project Link: [https://github.com/Retype15/whatsapp-summarizer-extension](https://github.com/Retype15/whatsapp-summarizer-extension)
 
 ---
