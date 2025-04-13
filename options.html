@@ -2,144 +2,49 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <!-- Use i18n for title -->
     <title>__MSG_optionsTitle__</title>
     <style>
         /* CSS remains the same */
-        body {
-            font-family: sans-serif;
-            padding: 20px;
-            max-width: 600px;
-            margin: auto;
-            background-color: #f4f4f4;
-            color: #333;
-        }
-        h1 {
-            text-align: center;
-            color: #075E54; /* Verde WhatsApp */
-        }
-        .option-group {
-            background-color: white;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: bold;
-            color: #555;
-        }
-        input[type="text"],
-        input[type="password"],
-        textarea {
-            width: 95%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 14px;
-        }
-         input[type="password"] { /* Estilo específico para la API key */
-             font-family: monospace;
-         }
-        textarea {
-            min-height: 100px;
-            resize: vertical;
-            font-family: monospace; /* Mejor para prompts */
-            line-height: 1.5;
-        }
-        button#save { /* Target only the save button for WA colors */
-            padding: 10px 20px;
-            background-color: #128C7E; /* Verde más oscuro */
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-            transition: background-color 0.2s;
-            display: block; /* Make it block */
-            margin: 10px auto 0 auto; /* Center it */
-        }
-        button#save:hover {
-            background-color: #075E54;
-        }
-        #status {
-            margin-top: 15px;
-            font-weight: bold;
-            text-align: center;
-            min-height: 20px; /* Evita saltos de layout */
-        }
-        .status-success {
-            color: green;
-        }
-        .status-error {
-            color: red;
-        }
-        p.description {
-            font-size: 0.9em;
-            color: #666;
-            margin-top: -10px;
-            margin-bottom: 15px;
-        }
-         .placeholder-info {
-             font-style: italic;
-             color: #888;
-             font-size: 0.85em;
-             margin-top: -10px;
-             margin-bottom: 10px;
-         }
-         .toggle-visibility {
-            font-size: 0.8em;
-            margin-left: 10px;
-            cursor: pointer;
-            color: #075E54;
-            text-decoration: underline;
-            background: none; /* Make it look like a link */
-            border: none;
-            padding: 0;
-         }
+        body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #f4f4f4; color: #333; }
+        h1 { text-align: center; color: #075E54; }
+        .option-group { background-color: white; padding: 15px 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
+        input[type="text"], input[type="password"], textarea { width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        input[type="password"] { font-family: monospace; }
+        textarea { min-height: 120px; /* Slightly taller for system instruction */ resize: vertical; font-family: monospace; line-height: 1.5; }
+        button#save { padding: 10px 20px; background-color: #128C7E; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.2s; display: block; margin: 10px auto 0 auto; }
+        button#save:hover { background-color: #075E54; }
+        #status { margin-top: 15px; font-weight: bold; text-align: center; min-height: 20px; }
+        .status-success { color: green; }
+        .status-error { color: red; }
+        p.description { font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 15px; line-height: 1.4; }
+        .placeholder-info { font-style: italic; color: #888; font-size: 0.85em; margin-top: -10px; margin-bottom: 10px; }
+        .toggle-visibility { font-size: 0.8em; margin-left: 10px; cursor: pointer; color: #075E54; text-decoration: underline; background: none; border: none; padding: 0; }
     </style>
 </head>
 <body>
 
-    <!-- Use i18n for H1 -->
     <h1>__MSG_optionsPageTitle__</h1>
 
     <div class="option-group">
-        <!-- Use i18n for section title -->
         <h2>__MSG_optionsApiKeySectionTitle__</h2>
-        <!-- Use i18n for label -->
         <label for="apiKey">__MSG_optionsApiKeyLabel__</label>
-        <!-- Use i18n for placeholder -->
         <input type="password" id="apiKey" placeholder="__MSG_optionsApiKeyPlaceholder__">
-        <!-- Text content set by JS -->
         <button class="toggle-visibility" id="toggleApiKey">__MSG_optionsApiKeyToggleShow__</button>
-        <!-- Use i18n for description (allows HTML) -->
         <p class="description">__MSG_optionsApiKeyDescription__</p>
     </div>
 
+    <!-- *** UPDATED PROMPTS SECTION *** -->
     <div class="option-group">
-        <!-- Use i18n for section title -->
         <h2>__MSG_optionsPromptsSectionTitle__</h2>
-        <!-- Use i18n for description -->
         <p class="description">__MSG_optionsPromptsDescription__</p>
 
-        <!-- Use i18n for label -->
-        <label for="summaryPrompt">__MSG_optionsSummaryPromptLabel__</label>
-        <textarea id="summaryPrompt" spellcheck="false"></textarea>
-        <!-- Use i18n for placeholder info (allows HTML) -->
-        <p class="placeholder-info">__MSG_optionsSummaryPromptPlaceholderInfo__</p>
-
-        <!-- Use i18n for label -->
-        <label for="followUpPrompt">__MSG_optionsFollowupPromptLabel__</label>
-        <textarea id="followUpPrompt" spellcheck="false"></textarea>
-        <!-- Use i18n for placeholder info (allows HTML) -->
-        <p class="placeholder-info">__MSG_optionsFollowupPromptPlaceholderInfo__</p>
+        <label for="systemInstructionPrompt">__MSG_optionsSystemInstructionLabel__</label>
+        <textarea id="systemInstructionPrompt" spellcheck="false"></textarea>
+        <p class="placeholder-info">__MSG_optionsSystemInstructionPlaceholderInfo__</p>
     </div>
+    <!-- *** END UPDATED PROMPTS SECTION *** -->
 
-    <!-- Use i18n for button text -->
     <button id="save">__MSG_optionsSaveButton__</button>
     <div id="status"></div>
 

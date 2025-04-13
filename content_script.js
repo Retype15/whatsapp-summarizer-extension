@@ -1,12 +1,11 @@
-// content_script.js - MODIFICADO v0.4.4 - Corrected Sender Attribution & i18n
-console.log("WhatsApp Summarizer: Content script cargado v0.4.4.");
+// content_script.js - MODIFICADO v0.4.5 - Sender Attribution Fix & Port Closed Fix & i18n
+console.log("WhatsApp Summarizer: Content script cargado v0.4.5.");
 
 // --- Selectores HTML (Add selector for copyable-text div) ---
 const MESSAGE_LIST_SELECTOR = '#main';
 const MESSAGE_ROW_SELECTOR = 'div[role="row"]';
 const MESSAGE_TEXT_SELECTOR = 'span.selectable-text.copyable-text'; // The span containing text
 const COPYABLE_TEXT_DIV_SELECTOR = 'div.copyable-text'; // The div wrapping text, holding data-pre-plain-text
-// const MESSAGE_SENDER_SELECTOR_CANDIDATE = 'span[aria-label]'; // NO LONGER USED FOR SENDER NAME
 const OUTGOING_MESSAGE_INDICATOR = 'div.message-out';
 const CHAT_HEADER_SELECTOR = 'header[data-testid="conversation-header"]';
 const MESSAGE_TIME_SELECTOR_IN_META = 'span[data-testid="msg-meta"] span[aria-label]';
@@ -16,7 +15,7 @@ const PRE_PLAIN_TEXT_SENDER_REGEX = /\[.+?\]\s*([^:]+):\s*$/; // Capture group 1
 const MESSAGE_CONTENT_CONTAINER = 'div.copyable-text'; // Used for context checks
 const HEADER_BUTTONS_CONTAINER_SELECTOR = 'div[data-testid="conversation-header"] > div:nth-child(3)';
 
-// --- Variables Globales (Remain the same) ---
+// --- Variables Globales ---
 let toggleChatButtonInPage = null;
 let chatPanel = null;
 let chatMessagesDiv = null;
@@ -29,10 +28,19 @@ let lastWaContext = [];
 // --- Helper for i18n ---
 function getMsg(key, substitutions = undefined) {
     try {
-        return chrome.i18n.getMessage(key, substitutions) || key;
+        // Check if chrome.i18n is available before using it
+        if (chrome && chrome.i18n && chrome.i18n.getMessage) {
+            return chrome.i18n.getMessage(key, substitutions) || key;
+        }
+        // Basic fallback
+        let replaced = key;
+        if (substitutions && Array.isArray(substitutions)) {
+             substitutions.forEach((sub, i) => { replaced = replaced.replace(`$${i+1}`, sub); });
+        } else if (substitutions) { replaced = key.replace('$1', substitutions); }
+        return replaced;
     } catch (e) {
-        console.warn(`i18n Error getting key "${key}":`, e);
-        return key;
+        console.warn(`i18n CS Error key "${key}":`, e);
+        return key; // Fallback to key on error
     }
 }
 
@@ -62,23 +70,22 @@ function extractLastMessages(count) {
     console.log(`Summarizer: Attempting to extract last ${lastMessagesElements.length} messages.`);
 
     const extractedMessages = [];
-    // Initialize tracker outside the loop
-    let lastKnownSender = getMsg("textUnknown"); // Start as unknown
+    let lastKnownSender = getMsg("textUnknown"); // Tracker initialized for this extraction run
 
     lastMessagesElements.forEach((msgRow, index) => {
         let text = null;
-        let currentSender = null; // Sender for *this* specific message row
+        let currentSender = null;
         let senderNameExplicitlyFoundThisRow = false;
+        let isSystemEvent = false; // Reset flag for each row
 
-        // 1. Check if Outgoing
+        // 1. Check Outgoing
         const isOutgoing = msgRow.querySelector(OUTGOING_MESSAGE_INDICATOR);
         if (isOutgoing) {
             currentSender = getMsg("textYou");
-            lastKnownSender = currentSender; // Update the tracker
+            lastKnownSender = currentSender;
             senderNameExplicitlyFoundThisRow = true;
-            // console.log(`DEBUG Row ${index}: Outgoing. Sender: ${currentSender}`);
         } else {
-            // 2. Check Incoming - Look for explicit name in data-pre-plain-text
+            // 2. Check Incoming - data-pre-plain-text
             const copyableDiv = msgRow.querySelector(COPYABLE_TEXT_DIV_SELECTOR);
             const prePlainText = copyableDiv?.getAttribute('data-pre-plain-text');
             let nameFromPreText = null;
@@ -87,26 +94,20 @@ function extractLastMessages(count) {
                 const match = prePlainText.match(PRE_PLAIN_TEXT_SENDER_REGEX);
                 if (match && match[1]) {
                     nameFromPreText = match[1].trim();
-                     // console.log(`DEBUG Row ${index}: Name found in pre-plain-text: "${nameFromPreText}"`);
+                     if (nameFromPreText.toLowerCase() === 'whatsapp') nameFromPreText = 'WhatsApp';
+                     currentSender = nameFromPreText;
+                     lastKnownSender = currentSender;
+                     senderNameExplicitlyFoundThisRow = true;
                 }
             }
 
-            if (nameFromPreText) {
-                 // Standardize common names if needed
-                 if (nameFromPreText.toLowerCase() === 'whatsapp') {
-                     nameFromPreText = 'WhatsApp'; // Consistent casing
-                 }
-                 currentSender = nameFromPreText;
-                 lastKnownSender = currentSender; // Update tracker
-                 senderNameExplicitlyFoundThisRow = true;
-            } else {
-                 // No explicit name found in pre-plain-text for this row, use the tracker
+            // 3. If no explicit name found yet, assign last known
+            if (!senderNameExplicitlyFoundThisRow) {
                  currentSender = lastKnownSender;
-                 // console.log(`DEBUG Row ${index}: No name in pre-plain-text, using last known: "${currentSender}"`);
             }
         }
 
-        // 3. Extract Message Text
+        // 4. Extract Text
         const textEl = msgRow.querySelector(MESSAGE_TEXT_SELECTOR);
         if (textEl) {
             text = textEl.textContent?.trim() || '';
@@ -115,64 +116,66 @@ function extractLastMessages(count) {
             }
         }
 
-        // 4. Fallback using Row's aria-label (Mostly for System Messages / Events)
-        let isSystemEvent = false; // Flag for system messages identified via aria-label
+        // 5. Fallback & System Message Check (using aria-label)
         if (text === null || text === '') {
             const rowLabel = msgRow.getAttribute('aria-label')?.trim();
             if (rowLabel && !TIMESTAMP_REGEX.test(rowLabel)) {
-                text = `[${rowLabel}]`; // Keep brackets for system/event messages
+                text = `[${rowLabel}]`;
                 const rowLabelLower = rowLabel.toLowerCase();
                 let systemSenderType = null;
 
-                // Check for specific system events and assign sender/text
+                // --- System Event Identification ---
                 if (rowLabelLower.includes('missed voice call') || rowLabelLower.includes('llamada de voz perdida')) {
-                    systemSenderType = getMsg("textMissedVoiceCall");
-                    isSystemEvent = true;
+                    systemSenderType = getMsg("textMissedVoiceCall"); isSystemEvent = true;
                 } else if (rowLabelLower.includes('missed video call') || rowLabelLower.includes('videollamada perdida')) {
-                    systemSenderType = getMsg("textMissedVideoCall");
-                    isSystemEvent = true;
+                    systemSenderType = getMsg("textMissedVideoCall"); isSystemEvent = true;
                 } else if (rowLabel.match(/you were added|te añadió|se añadió|created group|creaste el grupo|left|salió|changed the subject|cambió el asunto|changed this group's icon|cambió el ícono de este grupo|security code changed|código de seguridad cambió|^📅\s+/i)) {
-                    systemSenderType = getMsg("textSystemMessage");
-                    isSystemEvent = true;
+                    systemSenderType = getMsg("textSystemMessage"); isSystemEvent = true;
                 } else if (rowLabel.match(/messages and calls are end-to-end encrypted|mensajes y llamadas están cifrados/i)) {
-                   systemSenderType = getMsg("textSystemMessage");
-                   text = null; // Ignore encryption notice text
-                   isSystemEvent = true;
+                   systemSenderType = getMsg("textSystemMessage"); text = null; isSystemEvent = true; // Ignore text
                 } else if (rowLabel.match(/you deleted this message|eliminaste este mensaje/i)) {
-                    currentSender = getMsg("textYou"); // Correct sender
+                    // Override sender ONLY if it wasn't already explicitly set to 'You'
+                    if(currentSender !== getMsg("textYou")) {
+                        currentSender = getMsg("textYou");
+                        lastKnownSender = currentSender; // Update tracker
+                    }
                     text = getMsg("textMessageDeletedByYou");
-                    senderNameExplicitlyFoundThisRow = true; // Treat this as explicit identification
+                    senderNameExplicitlyFoundThisRow = true; // Mark as identified
                 } else if (rowLabel.match(/this message was deleted|este mensaje fue eliminado/i)) {
                     text = getMsg("textMessageDeleted");
-                    // Keep the currently assigned sender (which should be lastKnownSender if not explicit)
+                    // Keep previously determined sender (lastKnownSender if not explicit)
                 }
 
-                // If it was identified as a system event via label, update sender
-                if (isSystemEvent && systemSenderType) {
+                // --- Apply System Sender ---
+                // Apply if it's a system event AND we didn't already find an explicit sender name this row
+                // OR if the explicitly found sender was 'Unknown' (meaning tracker defaulted)
+                if (isSystemEvent && systemSenderType && (!senderNameExplicitlyFoundThisRow || currentSender === getMsg("textUnknown"))) {
                     currentSender = systemSenderType;
-                    lastKnownSender = currentSender; // Update tracker for system events too
-                    senderNameExplicitlyFoundThisRow = true; // Treat system events as explicitly identified
+                    lastKnownSender = currentSender; // Update tracker
                 }
             }
         }
 
-        // 5. Add to results if valid text and sender
-        // Ensure sender is not still "Unknown" unless it's a recognized system event
+        // --- 6. Add to results ---
+        // Add if we have text AND (we know the sender OR it's clearly a system message)
         if (text !== null && text !== '' && text !== '[null]') {
-             if (currentSender !== getMsg("textUnknown") || isSystemEvent) {
+             if (currentSender !== getMsg("textUnknown")) { // Stricter check: We MUST know the sender (or have classified it as system)
                 extractedMessages.push({ sender: currentSender, text });
-                 // console.log(`DEBUG Row ${index}: ADDED - Sender: "${currentSender}", Text: "${text.substring(0,50)}..."`);
+                // console.log(`DEBUG Row ${index}: ADDED - Sender: "${currentSender}", Text: "${text.substring(0,50)}..."`);
              } else {
-                 // console.log(`DEBUG Row ${index}: SKIPPED - Sender Unknown & not system: "${text}"`);
+                 // console.log(`DEBUG Row ${index}: SKIPPED - Sender Unknown: "${text}"`);
+                 // console.log(`DEBUG Row ${index} HTML: ${msgRow.outerHTML.substring(0, 200)}...`); // Log skipped row HTML for inspection
              }
         } else {
-            // console.log(`DEBUG Row ${index}: SKIPPED - No text extracted.`);
+             // console.log(`DEBUG Row ${index}: SKIPPED - No text extracted.`);
         }
-    });
+    }); // End forEach row
 
     console.log(`Summarizer: Successfully extracted ${extractedMessages.length} messages.`);
     if (extractedMessages.length === 0 && lastMessagesElements.length > 0) {
-        console.warn("Summarizer: Found message rows but failed to extract valid content.");
+        // The specific error message you saw comes from here.
+        // It means loops happened, but no rows met the final criteria in step 6.
+        console.warn("Summarizer: Found message rows but failed to extract valid content/sender pairs.");
         if (chatPanel && !chatPanel.classList.contains('hidden')) {
             showStatusInChat(getMsg("errorExtractionFailed"), "warning");
         }
@@ -181,29 +184,12 @@ function extractLastMessages(count) {
     return extractedMessages;
 }
 
-
-// --- Funciones de la Interfaz de Chat ---
-// createChatInterface, toggleChatPanel, displayChatMessage,
-// showStatusInChat, handleClearChat, handleSendChatMessage,
-// handleBackgroundResponse
-// --- Lógica de Comunicación (Listener Global) ---
-// onMessage listener
-// --- Lógica para añadir botón de control en la página ---
-// addChatToggleButtonToPage, removeControlsFromPage
-// --- Lógica Principal de Inserción/Eliminación (MutationObserver) ---
-// observerCallback, initializeObserver
-// --- Inicialización ---
-
-// --- (Rest of the file remains exactly the same as in the previous version v0.4.3) ---
-// ...(createChatInterface, toggleChatPanel, displayChatMessage, showStatusInChat, handleClearChat, handleSendChatMessage, handleBackgroundResponse, listener, addChatToggleButtonToPage, removeControlsFromPage, observer logic, initialization)...
-
-// --- Ensure the rest of the file from v0.4.3 is here ---
-// --- Funciones de la Interfaz de Chat ---
+// --- Funciones de la Interfaz de Chat --- (No changes needed in these functions from v0.4.3)
 
 /** Crea y añade el panel de chat al DOM si no existe */
 function createChatInterface() {
     if (document.getElementById('summarizer-chat-panel')) {
-        // Panel already exists, just ensure variables are set (for script reload scenarios)
+        // Panel already exists, just ensure variables are set
         if (!chatPanel) chatPanel = document.getElementById('summarizer-chat-panel');
         if (!chatMessagesDiv) chatMessagesDiv = document.getElementById('summarizer-chat-messages');
         if (!chatInput) chatInput = document.getElementById('summarizer-chat-input');
@@ -317,7 +303,7 @@ function createChatInterface() {
 function toggleChatPanel() {
     if (!chatPanel || !document.body.contains(chatPanel)) {
         console.log("Summarizer: Chat panel doesn't exist or not in DOM, creating/re-appending...");
-        createChatInterface(); // Creates if needed, ensures variables are set
+        createChatInterface();
         if (!chatPanel) {
             console.error("Summarizer: Failed to create panel within toggleChatPanel!");
             return;
@@ -336,9 +322,9 @@ function toggleChatPanel() {
 
     if (isNowVisible) {
         if (aiConversationHistory.length === 0 && chatMessagesDiv?.childElementCount === 0) {
-             displayChatMessage(getMsg("initialGreeting"), "ai", false); // i18n
+             displayChatMessage(getMsg("initialGreeting"), "ai", false);
         }
-        setTimeout(() => chatInput?.focus(), 50); // Focus input shortly after opening
+        setTimeout(() => chatInput?.focus(), 50);
     }
 }
 
@@ -350,9 +336,9 @@ function displayChatMessage(text, type = 'ai', addToHistory = true) {
     }
     const messageElement = document.createElement('div');
     messageElement.classList.add('chat-message', `${type}-message`);
-    messageElement.innerHTML = text.replace(/\n/g, '<br>'); // Render newlines correctly
+    messageElement.innerHTML = text.replace(/\n/g, '<br>');
     chatMessagesDiv.appendChild(messageElement);
-    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight; // Auto-scroll
+    chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
 
     if (addToHistory && (type === 'user' || type === 'ai')) {
         aiConversationHistory.push({ role: (type === 'ai' ? 'model' : 'user'), text: text });
@@ -367,24 +353,18 @@ function showStatusInChat(message, type = 'status', duration = 4000) {
      }
      const statusElement = document.createElement('div');
      statusElement.classList.add('chat-message', `${type}-message`);
-     statusElement.textContent = message; // Status messages usually don't need HTML rendering
+     statusElement.textContent = message;
      chatMessagesDiv.appendChild(statusElement);
      chatMessagesDiv.scrollTop = chatMessagesDiv.scrollHeight;
 
      if (duration > 0) {
          setTimeout(() => {
-             // Check if the specific status element still exists before removing it
              if (statusElement && statusElement.parentNode === chatMessagesDiv) {
-                 try {
-                    chatMessagesDiv.removeChild(statusElement);
-                 } catch (e) {
-                    // Ignore if it was already removed (e.g., by handleClearChat)
-                 }
+                 try { chatMessagesDiv.removeChild(statusElement); } catch(e){}
              }
          }, duration);
      }
 }
-
 
 /** Limpia historial lógico, contexto WA y panel visual */
 function handleClearChat() {
@@ -397,18 +377,18 @@ function handleClearChat() {
     if (chatInput) {
          chatInput.value = '';
          chatInput.style.height = 'auto';
-         chatInput.placeholder = getMsg("inputPlaceholder"); // i18n
-         chatInput.disabled = false; // Ensure enabled
+         chatInput.placeholder = getMsg("inputPlaceholder");
+         chatInput.disabled = false;
          chatInput.focus();
     }
     if (chatSendButton) {
-        chatSendButton.disabled = false; // Ensure enabled
+        chatSendButton.disabled = false;
     }
 }
 
 /** Maneja el envío de un mensaje desde el input del chat */
 function handleSendChatMessage() {
-    if (!chatInput || !chatInput.value.trim() || chatInput.disabled) return; // Check if disabled
+    if (!chatInput || !chatInput.value.trim() || chatInput.disabled) return;
 
     const userMessage = chatInput.value.trim();
     console.log("Summarizer: User message sent:", userMessage);
@@ -416,10 +396,10 @@ function handleSendChatMessage() {
     displayChatMessage(userMessage, 'user', true);
     const currentUserMessageEntry = aiConversationHistory[aiConversationHistory.length - 1];
 
-    const originalPlaceholder = getMsg("inputPlaceholder"); // Store translated placeholder
+    const originalPlaceholder = getMsg("inputPlaceholder");
     chatInput.value = '';
     chatInput.style.height = 'auto';
-    chatInput.placeholder = getMsg("inputPlaceholderWaiting"); // i18n
+    chatInput.placeholder = getMsg("inputPlaceholderWaiting");
     chatInput.disabled = true;
     chatSendButton.disabled = true;
 
@@ -437,12 +417,12 @@ function handleSendChatMessage() {
             if (!isNaN(count) && count > 0) {
                 messageCount = count;
             } else {
-                 showStatusInChat(getMsg("statusInvalidCount", [countStr, messageCount]), 'warning', 3000); // i18n
+                 showStatusInChat(getMsg("statusInvalidCount", [countStr, messageCount]), 'warning', 3000);
             }
         }
-         showStatusInChat(getMsg("statusGeneratingSummary", [messageCount]), 'status'); // i18n
+         showStatusInChat(getMsg("statusGeneratingSummary", [messageCount]), 'status');
     } else {
-         showStatusInChat(getMsg("statusSendingQuery"), 'status'); // i18n
+         showStatusInChat(getMsg("statusSendingQuery"), 'status');
     }
 
     // Function to re-enable UI components
@@ -460,14 +440,14 @@ function handleSendChatMessage() {
     // --- Process Request ---
     if (isSummaryRequest) {
         console.log("Summarizer: Summary request. Clearing AI history (keeping request) and WA context.");
-        aiConversationHistory = [currentUserMessageEntry]; // Keep only user request
+        aiConversationHistory = [currentUserMessageEntry];
         lastWaContext = [];
 
         const messagesToProcess = extractLastMessages(messageCount);
         if (!messagesToProcess || messagesToProcess.length === 0) {
             const errorMsg = getMsg("errorExtractionFailed");
             showStatusInChat(errorMsg, "error");
-            aiConversationHistory = []; // Clear user request too if extraction failed
+            aiConversationHistory = [];
             displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false);
             cleanupUI();
             return;
@@ -476,7 +456,6 @@ function handleSendChatMessage() {
         lastWaContext = messagesToProcess;
         console.log(`Summarizer: Stored ${lastWaContext.length} WA messages for context.`);
 
-        // Send for summary, expect response via sendResponse
         chrome.runtime.sendMessage(
             { action: "processMessagesForSummary", data: messagesToProcess },
             (response) => {
@@ -484,40 +463,32 @@ function handleSendChatMessage() {
                 cleanupUI();
             }
         );
-        // Return true handled by listener
     } else { // Follow-up question
         const historyToSend = [...aiConversationHistory];
         const waContextToSend = [...lastWaContext];
         console.log(`Summarizer: Sending follow-up with ${historyToSend.length} AI history and ${waContextToSend.length} WA context.`);
 
-        // Send for follow-up, expect response via onMessage listener ("displayAiResponse")
-                // Send for follow-up, expect response via onMessage listener ("displayAiResponse")
         chrome.runtime.sendMessage(
             { action: "sendFollowUpMessage", data: { history: historyToSend, waContext: waContextToSend } },
-            (response) => { // This callback mainly catches *very* early synchronous errors
-                // Check for lastError, but specifically IGNORE the "port closed" error for this action,
-                // as the actual response comes via tabs.sendMessage.
+            (response) => { // Catches immediate errors + ignores expected "port closed"
                  if (chrome.runtime.lastError) {
                      if (chrome.runtime.lastError.message?.includes("closed before a response was received")) {
-                         // This is expected for sendFollowUpMessage because background returns false. Ignore it.
-                         console.log("Summarizer: sendMessage port closed as expected for follow-up (response via tabs.sendMessage).");
+                         console.log("Summarizer: sendMessage port closed as expected for follow-up.");
                      } else {
-                         // Log other unexpected errors during sending itself
                          console.error("Summarizer: Unexpected runtime error sending follow-up:", chrome.runtime.lastError.message);
                          const errMsg = getMsg("errorCommunication", [chrome.runtime.lastError.message]);
                          showStatusInChat(errMsg, "error");
                          displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errMsg}]`, "error", false);
-                         cleanupUI(); // Re-enable UI only on unexpected errors
+                         cleanupUI(); // Cleanup on unexpected errors
                      }
                  } else if (response && !response.success) {
-                     // Handle potential immediate failure response sent via sendResponse (unlikely for this action now)
                      console.error("Summarizer: Background reported immediate error on follow-up:", response.error);
                      const errMsg = getMsg("errorProcessing", [response.error]);
                      showStatusInChat(errMsg, "error");
                      displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errMsg}]`, "error", false);
                      cleanupUI();
                  }
-                 // DO NOT call cleanupUI here otherwise. Wait for the displayAiResponse message.
+                 // No cleanupUI here otherwise - wait for displayAiResponse message
             }
         );
     }
@@ -530,7 +501,7 @@ function handleBackgroundResponse(response) {
          const errorMsg = getMsg("errorCommunication", [chrome.runtime.lastError.message]);
          showStatusInChat(errorMsg, "error");
          displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false);
-         return; // Don't proceed
+         return;
      }
 
     console.log("Content script: Response received via sendResponse:", response);
@@ -540,7 +511,7 @@ function handleBackgroundResponse(response) {
         // Use the error message directly from the background (it should be translated there)
         const errorMsg = response.error || getMsg("errorUnexpectedResponse");
         showStatusInChat(errorMsg, "error");
-        displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false); // Show specific AI/BG error
+        displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false);
     } else {
         const errorMsg = getMsg("errorUnexpectedResponse");
         showStatusInChat(errorMsg, "error");
@@ -556,7 +527,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if(chatInput) {
             chatInput.placeholder = getMsg("inputPlaceholder");
             chatInput.disabled = false;
-            if (!chatPanel?.classList.contains('hidden')) { // Only focus if panel is visible
+            if (!chatPanel?.classList.contains('hidden')) {
                  chatInput.focus();
              }
         }
@@ -572,8 +543,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             return false;
         }
 
-        // Ensure panel visible
-        try {
+        try { // Ensure panel visible
              if (!chatPanel || !document.body.contains(chatPanel)) createChatInterface();
              if (chatPanel.classList.contains('hidden')) toggleChatPanel();
              if (!chatPanel || chatPanel.classList.contains('hidden')) throw new Error("Panel creation/visibility failed.");
@@ -583,48 +553,44 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
              return false;
         }
 
-        handleClearChat(); // Clear previous state
+        handleClearChat();
         showStatusInChat(getMsg("statusGeneratingSummary", [count]), 'status');
-        if(chatInput) chatInput.disabled = true; // Disable UI during processing
+        if(chatInput) chatInput.disabled = true;
         if(chatSendButton) chatSendButton.disabled = true;
 
-        // Extract messages
         const messagesToProcess = extractLastMessages(count);
         if (!messagesToProcess || messagesToProcess.length === 0) {
              const errorMsg = getMsg("errorExtractionFailed");
              showStatusInChat(errorMsg, "error");
              displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false);
-             cleanupUI(); // Re-enable UI
-             sendResponse({ success: false, error: errorMsg }); // Report specific error
+             cleanupUI();
+             sendResponse({ success: false, error: errorMsg });
              return false;
         }
 
-        // Store context & send to background
         lastWaContext = messagesToProcess;
-        aiConversationHistory = []; // Reset AI history for popup request
+        aiConversationHistory = [];
         console.log(`Summarizer: Stored ${lastWaContext.length} WA msgs for context (from popup).`);
 
         chrome.runtime.sendMessage(
             { action: "processMessagesForSummary", data: messagesToProcess },
-            (response) => { // Callback for sendResponse from background
-                handleBackgroundResponse(response); // Display result/error in chat panel
-                cleanupUI(); // Re-enable UI
-                // Respond to the popup itself
+            (response) => {
+                handleBackgroundResponse(response);
+                cleanupUI();
                 if (chrome.runtime.lastError) {
                      sendResponse({ success: false, error: getMsg("errorCommunication", [chrome.runtime.lastError.message]) });
                 } else {
-                     // Relay background's success/error status
                      sendResponse({ success: response.success, error: response.error });
                 }
             }
         );
-        return true; // Indicate async response to popup
+        return true; // Async response to popup
 
     } else if (message.action === "displayAiResponse") { // Pushed from background for follow-up
          console.log("Content script: Received 'displayAiResponse' from background.");
          if (message.data && typeof message.data.response === 'string') {
-             // Check if it's an error message from background (which should be translated)
-             const isError = message.data.response.startsWith(`[${getMsg("statusErrorGeneric")}`) || message.data.response.includes(getMsg("errorAiError", "")); // More robust error check
+             // Check if it's an error message (should be pre-formatted by background)
+             const isError = message.data.response.startsWith(`[${getMsg("statusErrorGeneric")}`);
               displayChatMessage(message.data.response, isError ? 'error' : 'ai', !isError);
               if (isError) {
                  showStatusInChat(getMsg("statusErrorGeneric") + " (IA)", "error", 4000); // Show brief status
@@ -635,20 +601,20 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
               showStatusInChat(errorMsg, "warning");
               displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false);
          }
-         cleanupUI(); // Re-enable UI after getting follow-up response/error
-         return false; // No sendResponse needed from here
+         cleanupUI(); // Re-enable UI AFTER getting response/error
+         return false;
 
-     } else if (message.action === "apiKeyMissingError") { // Handle API key error pushed from background
+     } else if (message.action === "apiKeyMissingError") {
           console.error("Summarizer: Background reported API Key is missing.");
-          const errorMsg = message.error || getMsg("errorApiKeyNotConfigured"); // Use specific msg if provided
-          showStatusInChat(errorMsg, "error", 6000); // Show longer
+          const errorMsg = message.error || getMsg("errorApiKeyNotConfigured");
+          showStatusInChat(errorMsg, "error", 6000);
           displayChatMessage(`[${getMsg("statusErrorGeneric")}: ${errorMsg}]`, "error", false);
-          cleanupUI(); // Re-enable UI
+          cleanupUI();
           return false;
      }
      else {
           console.log("Content script: Received unhandled message action:", message.action);
-          return false; // Indicate sync response (or no response needed) for unhandled actions
+          return false;
      }
 });
 
@@ -662,53 +628,46 @@ function addChatToggleButtonToPage() {
 
     toggleChatButtonInPage = document.createElement('button');
     toggleChatButtonInPage.setAttribute('id', 'summarizer-toggle-button-page');
-    toggleChatButtonInPage.textContent = getMsg("toggleButtonText"); // i18n
-    toggleChatButtonInPage.title = getMsg("toggleButtonTitle"); // i18n
+    toggleChatButtonInPage.textContent = getMsg("toggleButtonText");
+    toggleChatButtonInPage.title = getMsg("toggleButtonTitle");
     toggleChatButtonInPage.addEventListener('click', toggleChatPanel);
 
-    // Find insertion point (more robustly)
+    // Find insertion point
     let existingButtonsContainer = targetHeader.querySelector(HEADER_BUTTONS_CONTAINER_SELECTOR);
     if (!existingButtonsContainer) existingButtonsContainer = targetHeader.querySelector('div[role="toolbar"]');
-    if (!existingButtonsContainer) existingButtonsContainer = targetHeader.querySelector('div > span > div[role="button"], div > div[role="button"]')?.parentNode;
-    // Add more fallbacks if needed based on WA structure changes
+    // Add more fallbacks if WA changes structure
 
      if (existingButtonsContainer && existingButtonsContainer.parentNode === targetHeader) {
-        // Insert before the first actionable element (button or div with role button)
         const firstButton = existingButtonsContainer.querySelector('button, div[role="button"]');
         if (firstButton) {
             existingButtonsContainer.insertBefore(toggleChatButtonInPage, firstButton);
              console.log("Summarizer: Toggle Chat button inserted before existing buttons.");
         } else {
-             existingButtonsContainer.appendChild(toggleChatButtonInPage); // Append if container is empty
+             existingButtonsContainer.appendChild(toggleChatButtonInPage);
              console.log("Summarizer: Toggle Chat button appended to button container.");
         }
     } else {
-        // Fallback: Append directly to header (less ideal position)
         targetHeader.appendChild(toggleChatButtonInPage);
         console.warn("Summarizer: Suitable button container not found. Appending button to header end.");
     }
     return true;
 }
 
-
 function removeControlsFromPage() {
     if (toggleChatButtonInPage && toggleChatButtonInPage.parentNode) {
         toggleChatButtonInPage.parentNode.removeChild(toggleChatButtonInPage);
         console.log("Summarizer: Toggle Chat button removed.");
     }
-    toggleChatButtonInPage = null; // Clear reference
+    toggleChatButtonInPage = null;
 }
 
-// --- Lógica Principal de Inserción/Eliminación (MutationObserver - improved slightly) ---
+// --- Lógica Principal de Inserción/Eliminación (MutationObserver) ---
 let observer = null;
 
 const observerCallback = (mutationsList, obs) => {
     let headerAppeared = false;
     const headerCurrentlyExists = !!document.querySelector(CHAT_HEADER_SELECTOR);
     const buttonExists = !!document.getElementById('summarizer-toggle-button-page');
-
-    // Optimization: If header exists and button exists, maybe skip heavy checks unless necessary
-    // if (headerCurrentlyExists && buttonExists) { return; }
 
     for (const mutation of mutationsList) {
         if (mutation.type === 'childList') {
@@ -718,23 +677,19 @@ const observerCallback = (mutationsList, obs) => {
                 }
             }
              if (headerAppeared) break;
-             // Checking removed nodes is less critical as we check existence directly
         }
     }
 
      // --- Action ---
-     // Add button if header appeared (or is present now) AND button is missing
      if ((headerAppeared || headerCurrentlyExists) && !buttonExists) {
          console.log("Observer: Header detected, ensuring button exists...");
-         setTimeout(addChatToggleButtonToPage, 500); // Delay slightly for stability
+         setTimeout(addChatToggleButtonToPage, 500);
      }
-     // Remove button if header is gone AND button exists
      else if (!headerCurrentlyExists && buttonExists) {
          console.log("Observer: Header not found, removing controls...");
          removeControlsFromPage();
      }
 };
-
 
 // --- Inicialización ---
 function initializeObserver() {
@@ -751,19 +706,19 @@ function initializeObserver() {
         const config = { childList: true, subtree: true };
         observer.observe(targetNode, config);
         console.log("Summarizer: MutationObserver initiated on", targetNode.id || 'body');
-        setTimeout(createChatInterface, 500); // Create UI early
-        setTimeout(() => { // Attempt initial button add if header present on load
+        setTimeout(createChatInterface, 500);
+        setTimeout(() => {
             if (document.querySelector(CHAT_HEADER_SELECTOR)) {
                 addChatToggleButtonToPage();
             }
         }, 1500);
     } else {
         console.error("Summarizer: Could not find #app or body to initiate MutationObserver.");
-        setTimeout(createChatInterface, 3000); // Fallback creation
-        setTimeout(addChatToggleButtonToPage, 3500); // Fallback add attempt
+        setTimeout(createChatInterface, 3000);
+        setTimeout(addChatToggleButtonToPage, 3500);
     }
 }
 
 initializeObserver(); // Start
 
-console.log("WhatsApp Summarizer: Content script ready (v0.4.4).");
+console.log("WhatsApp Summarizer: Content script ready (v0.4.5).");

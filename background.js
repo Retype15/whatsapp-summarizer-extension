@@ -1,71 +1,46 @@
-// background.js - MODIFICADO v0.4.3 - i18n for errors
+// background.js - MODIFICADO v0.4.10 - Correct History/Context for Follow-up
 
-const MODEL_ID = 'gemini-1.5-flash';
+const MODEL_ID = 'gemini-2.0-flash';
 const GENERATE_CONTENT_API = 'generateContent';
 
 // --- Helper for i18n ---
 function getMsg(key, substitutions = undefined) {
     try {
-        // Check if chrome.i18n is available before using it
         if (chrome && chrome.i18n && chrome.i18n.getMessage) {
             return chrome.i18n.getMessage(key, substitutions) || key;
         }
-        // Basic substitution fallback if needed for testing outside extension context
-         if (substitutions && typeof substitutions === 'string') return key.replace("$1", substitutions);
-         if (substitutions && Array.isArray(substitutions)) {
-             let replaced = key;
-             substitutions.forEach((sub, i) => { replaced = replaced.replace(`$${i+1}`, sub); });
-             return replaced;
-         }
         return key;
     } catch (e) {
         console.warn(`i18n Background Error getting key "${key}":`, e);
-        return key; // Fallback to key on error
+        return key;
     }
 }
 
-
-// --- Default Prompts (Not translated, user customizable) ---
-const DEFAULT_SUMMARY_PROMPT = `Por favor, resume concisamente la siguiente conversación de WhatsApp. Enfócate en los puntos clave y decisiones tomadas, si las hay:\n---\n{messages}\n---\nResumen conciso:`;
-const DEFAULT_FOLLOW_UP_PROMPT = `Contexto de WhatsApp relevante (mensajes previos al resumen):
----------------------------------
-{waContext}
----------------------------------
-
-Basándote en el contexto anterior (si lo hay) y nuestra conversación actual, responde a la última pregunta del usuario.
-Nuestra conversación:
----------------------------------
-{aiHistory}
----------------------------------
-IA:`;
-
+// --- Default System Instruction ---
+const DEFAULT_SYSTEM_INSTRUCTION = getMsg("defaultSystemInstruction");
 
 // --- Function to get settings ---
 async function getSettings() {
     return new Promise((resolve) => {
         chrome.storage.sync.get({
             geminiApiKey: '',
-            summaryPrompt: DEFAULT_SUMMARY_PROMPT,
-            followUpPrompt: DEFAULT_FOLLOW_UP_PROMPT
+            systemInstructionPrompt: DEFAULT_SYSTEM_INSTRUCTION
         }, (items) => {
             if (chrome.runtime.lastError) {
                 console.error("Background: Error loading settings:", chrome.runtime.lastError.message);
                 resolve({
                     apiKey: '',
-                    summaryPrompt: DEFAULT_SUMMARY_PROMPT,
-                    followUpPrompt: DEFAULT_FOLLOW_UP_PROMPT
+                    systemInstructionText: DEFAULT_SYSTEM_INSTRUCTION
                 });
             } else {
                  resolve({
                      apiKey: items.geminiApiKey || '',
-                     summaryPrompt: items.summaryPrompt || DEFAULT_SUMMARY_PROMPT,
-                     followUpPrompt: items.followUpPrompt || DEFAULT_FOLLOW_UP_PROMPT
+                     systemInstructionText: items.systemInstructionPrompt || DEFAULT_SYSTEM_INSTRUCTION
                  });
             }
         });
     });
 }
-
 
 // --- Main Message Listener ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
@@ -78,200 +53,292 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         if (message.action === "openOptionsPage") {
             console.log("Background: Opening options page.");
             chrome.runtime.openOptionsPage();
-            // No response needed for this action
-            return; // Exit handler
+            return;
         }
 
-        // Check API Key for relevant actions
+        // API Key Check
         const needsApiKey = ["processMessagesForSummary", "sendFollowUpMessage"].includes(message.action);
         if (needsApiKey && !settings.apiKey) {
             console.error("Background: Gemini API Key is not configured.");
-            const errorMessage = getMsg("errorApiKeyNotConfigured"); // i18n
-             // Try to send error back to content script via message
+            const errorMessage = getMsg("errorApiKeyNotConfigured");
              if (sender.tab && sender.tab.id) {
                   try {
-                      // Use a specific action for this error type
-                      await chrome.tabs.sendMessage(sender.tab.id, {
-                          action: "apiKeyMissingError",
-                          error: errorMessage
-                      });
+                      await chrome.tabs.sendMessage(sender.tab.id, { action: "apiKeyMissingError", error: errorMessage });
                   } catch (error) { console.error("BG: Failed to send API key error to CS:", error.message); }
              }
-             // Also send response back if the original message expects one (like processMessagesForSummary)
              if (message.action === "processMessagesForSummary") {
                 sendResponse({ success: false, error: errorMessage });
-             } else {
-                 // For sendFollowUpMessage, we primarily communicate via tabs.sendMessage,
-                 // but sending a failure response here might help popup.js if it initiated
-                 // (though popup usually triggers 'triggerSummaryFromPopup')
-                 // Check if sendResponse is even valid in this context before calling it.
-                 // Safest to rely on the tabs.sendMessage above.
              }
-             return; // Exit handler
+             return;
         }
 
+        // Prepare System Instruction object
+        const systemInstructionPayload = {
+            parts: [{ text: settings.systemInstructionText }]
+        };
 
-        // Handle Initial Summary Request
+
+        // --- Handle Initial Summary Request ---
         if (message.action === "processMessagesForSummary") {
-            const messages = message.data;
-            console.log(`Background: Processing ${messages?.length || 0} messages for initial summary.`);
-            if (!messages || messages.length === 0) {
-                 sendResponse({ success: false, error: "No messages provided." }); // Keep internal errors brief
+            const messagesToSummarize = message.data;
+            console.log(`Background: Processing ${messagesToSummarize?.length || 0} messages for initial summary.`);
+            if (!messagesToSummarize || messagesToSummarize.length === 0) {
+                 sendResponse({ success: false, error: "No messages provided." });
                  return;
             }
-            const promptText = formatMessagesForGeminiSummary(messages, settings.summaryPrompt);
+
+            const formattedWaMessages = formatMessagesForPayload(messagesToSummarize);
+            const firstUserPromptText = `Here is a snippet of a WhatsApp conversation. Please provide a concise summary focusing on key points and decisions:\n---\n${formattedWaMessages}\n---`;
+
+            const contentsPayload = [
+                { role: "user", parts: [{ text: firstUserPromptText || "(User provided no text)" }] }
+            ];
 
             try {
-                const summary = await callGeminiAPI([{ role: 'user', parts: [{ text: promptText }] }], settings.apiKey);
+                const summary = await callGeminiAPI(contentsPayload, systemInstructionPayload, settings.apiKey);
                 console.log("Background: Initial summary generated.");
-                sendResponse({ success: true, summary: summary }); // Respond async
+                sendResponse({ success: true, summary: summary });
             } catch (error) {
                 console.error("Background: Error calling Gemini for summary:", error);
-                // Send the translated/formatted error message back
-                sendResponse({ success: false, error: error.message || "Unknown API error" }); // Respond async
+                sendResponse({ success: false, error: error.message || "Unknown API error" });
             }
-            // Flow ends here for this action
 
-        // Handle Follow-up Question
+
+        // --- Handle Follow-up Question ---
         } else if (message.action === "sendFollowUpMessage") {
+            // aiHistory: The full chat history from the panel, including the initial user request,
+            //            the model's summary, and subsequent Q&A. Ends with the latest user question.
+            // waContext: The WhatsApp messages used for the *initial* summary.
             const { history: aiHistory = [], waContext = [] } = message.data;
 
+            // Basic check: History must exist
             if (!aiHistory.length) {
-                console.warn("Background: sendFollowUpMessage called without AI history.");
-                // No response needed back to content script for this specific warning
-                return; // Exit handler
+                console.error("Background: Invalid AI history received for follow-up (empty).");
+                 if (sender.tab?.id) { /* ... send error back ... */ }
+                return;
             }
+            // Ensure the last turn is the user's question we need to answer
+             if (aiHistory[aiHistory.length - 1].role !== 'user') {
+                 console.error("Background: Invalid AI history received for follow-up (must end with user).", aiHistory);
+                  if (sender.tab?.id) { /* ... send error back ... */ }
+                 return;
+             }
 
-            console.log(`Background: Processing follow-up...`);
-            const fullPromptText = buildFollowUpPrompt(waContext, aiHistory, settings.followUpPrompt);
+
+            console.log(`Background: Processing follow-up with ${aiHistory.length} turns and ${waContext.length} WA context messages...`);
+
+            const formattedWaContext = formatMessagesForPayload(waContext);
+            const contextPreamble = formattedWaContext
+                ? `Background context from the original WhatsApp chat snippet:\n---\n${formattedWaContext}\n---\n\n`
+                : "No prior WhatsApp context was provided.\n\n";
+
+            // *** REVISED PAYLOAD CONSTRUCTION for Follow-up ***
+            const fullContents = [];
+
+            // 1. Add the WA Context Preamble as the *first* user message.
+            //    This clearly separates the original WA context from the AI chat history.
+             fullContents.push({
+                 role: "user",
+                 parts: [{ text: contextPreamble + "Now, regarding our conversation:" }]
+             });
+
+            // 2. Add a placeholder model response to acknowledge the context (maintains alternation).
+            //    This acts as a bridge between the raw context and the actual chat history.
+             fullContents.push({
+                 role: "model",
+                 parts: [{ text: "Understood. I have the original WhatsApp context (if provided). Please proceed with our conversation." }]
+             });
+
+            // 3. Add the *entire* AI chat history from the panel.
+            aiHistory.forEach(turn => {
+                 // Ensure the turn structure is valid before pushing
+                 const textContent = turn.text || `(${turn.role} provided no text)`;
+                 if (turn.role && (turn.role === 'user' || turn.role === 'model')) {
+                     fullContents.push({
+                         role: turn.role,
+                         parts: [{ text: textContent }]
+                     });
+                 } else {
+                     console.warn("BG: Skipping turn with invalid role in aiHistory:", turn);
+                 }
+            });
+
+
+            // Optional: Log the final structure
+            // console.log("BG DEBUG: Final Follow-up Contents Structure:", JSON.stringify(fullContents, null, 2));
 
              try {
-                 const aiResponse = await callGeminiAPI([{ role: 'user', parts: [{ text: fullPromptText }] }], settings.apiKey);
+                 // The history structure sent now explicitly includes the context first,
+                 // then the actual user/model interactions.
+                 const aiResponse = await callGeminiAPI(fullContents, systemInstructionPayload, settings.apiKey);
                  console.log("Background: Follow-up response generated.");
-                 // Send response back to content script via tabs.sendMessage
-                 if (sender.tab && sender.tab.id) {
-                      try {
-                          await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: aiResponse } });
-                          console.log("BG: Follow-up response sent via tabs.sendMessage.");
-                      } catch (error) {
-                           console.error("BG: Error sending follow-up response to tab:", error.message);
-                      }
+                 if (sender.tab?.id) {
+                      try { await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: aiResponse } }); }
+                      catch (error) { console.error("BG: Error sending follow-up response to tab:", error.message); }
                  } else { console.error("BG: No sender tab ID for follow-up response."); }
-                 // NO sendResponse needed here
 
              } catch (error) {
                  console.error("Background: Error calling Gemini for follow-up:", error);
-                 const errorMessage = error.message || "Unknown API error during follow-up"; // Use the error message from callGeminiAPI
-                 // Attempt to send error message back to content script
-                  if (sender.tab && sender.tab.id) {
-                       try {
-                           // Use the same action, let content script display it as error
-                           await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: errorMessage } });
-                           console.log("BG: Follow-up error message sent via tabs.sendMessage.");
-                       } catch (errorMsg) { console.error("BG: Error sending error message to tab:", errorMsg.message); }
+                 const errorMessage = error.message || "Unknown API error during follow-up";
+                  if (sender.tab?.id) {
+                       try { await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: errorMessage } }); }
+                       catch (errorMsg) { console.error("BG: Error sending error message to tab:", errorMsg.message); }
                   }
-                 // NO sendResponse needed here
              }
-            // Flow ends here for this action
 
         } else {
              console.log("Background: Unhandled action:", message.action);
-             // Optionally send a response for unhandled actions if needed by the sender
-             // sendResponse({ success: false, error: `Unhandled action: ${message.action}`});
         }
     } // End of async handleMessage
 
-    // Execute the handler
-    handleMessage().catch(e => { // Catch any unhandled promise rejections within handleMessage
+    handleMessage().catch(e => {
          console.error("Background: Uncaught error in handleMessage:", e);
-         // Try to inform the content script if possible and if a response is expected
+          const errorMsg = `[${getMsg("statusErrorGeneric")}: Internal background error]`;
          if (message.action === "processMessagesForSummary") {
-              try { sendResponse({ success: false, error: "Internal background error." }); } catch (srErr) {}
+              try { sendResponse({ success: false, error: errorMsg }); } catch (srErr) {}
          } else if (sender.tab?.id) {
-             try { chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: "[Internal background error]" } }); } catch (tsErr) {}
+             try { chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: errorMsg } }); } catch (tsErr) {}
          }
     });
 
-    // Return true ONLY if sendResponse will be called asynchronously *by this listener's logic*
-    // In this case, only for "processMessagesForSummary".
-    // Other actions either don't respond or use tabs.sendMessage.
     const requiresAsyncResponse = (message.action === "processMessagesForSummary");
-    // console.log(`Background: Returning ${requiresAsyncResponse} for action: ${message.action}`);
     return requiresAsyncResponse;
 
 }); // End of addListener
 
-// --- Helper Functions ---
 
-/** Formats messages for summary prompt */
-function formatMessagesForGeminiSummary(messages, summaryPromptTemplate) {
-    let messageString = "";
-    if (Array.isArray(messages) && messages.length > 0) {
-        messageString = messages.map(msg => {
-            const truncatedText = msg.text.length > 350 ? msg.text.substring(0, 347) + "..." : msg.text;
-            return `[${msg.sender}]: ${truncatedText}`; // Sender name is already translated by content script
-        }).join("\n");
-    } else {
-        messageString = "No messages provided."; // Internal placeholder
+// --- Helper Function to format WA messages for payload ---
+function formatMessagesForPayload(messages) {
+    if (!messages || messages.length === 0) {
+        return "";
     }
-    return summaryPromptTemplate.replace('{messages}', messageString);
+    return messages.map(msg => {
+        const sender = msg?.sender || getMsg("textUnknown");
+        const text = msg?.text || "";
+        const truncatedText = text.length > 500 ? text.substring(0, 497) + "..." : text;
+        return `[${sender}]: ${truncatedText}`;
+    }).join("\n");
 }
 
-/** Builds the follow-up prompt */
-function buildFollowUpPrompt(waContext, aiHistory, followUpPromptTemplate) {
-    let waContextString = "No previous WhatsApp context available."; // Internal placeholder
-    if (waContext && waContext.length > 0) {
-        waContextString = waContext.map(msg => {
-            const truncatedText = msg.text.length > 350 ? msg.text.substring(0, 347) + "..." : msg.text;
-            return `[${msg.sender}]: ${truncatedText}`;
-        }).join("\n");
-        if (waContextString.length > 4000) {
-             waContextString = waContextString.substring(0, 3997) + "... (context truncated)";
+
+// --- Gemini API Call Function ---
+async function callGeminiAPI(contents, systemInstruction, apiKey) {
+     if (!apiKey) { throw new Error(getMsg("errorApiKeyNotProvidedInternal")); }
+
+    // Pre-validation of contents structure
+     if (!Array.isArray(contents)) {
+         throw new Error("Internal error: 'contents' must be an array.");
+     }
+     if (contents.length === 0 && (!systemInstruction || !systemInstruction.parts || !systemInstruction.parts[0]?.text)){
+         // Avoid API call if both contents AND systemInstruction are effectively empty
+          throw new Error("Internal error: Cannot call API with empty contents and system instruction.");
+     }
+     for (let i = 0; i < contents.length; i++) {
+         const turn = contents[i];
+         if (!turn || typeof turn !== 'object') { throw new Error(`Internal error: Invalid structure for turn ${i} (not an object).`); }
+         if (typeof turn.role !== 'string' || !['user', 'model'].includes(turn.role)) { throw new Error(`Internal error: Invalid role "${turn.role}" for turn ${i}.`); }
+         if (!turn.parts || !Array.isArray(turn.parts) || turn.parts.length === 0) {
+             console.warn(`BG Warning: 'parts' array is missing or empty for turn ${i}. Fixing.`);
+             contents[i].parts = [{ text: `(${turn.role} provided no text)` }];
+         } else if (typeof turn.parts[0].text !== 'string') {
+              console.warn(`BG Warning: parts[0].text is not a string for turn ${i}. Fixing.`, turn.parts[0]);
+              contents[i].parts[0].text = String(turn.parts[0].text || `(${turn.role} provided no text)`);
+         } else if (turn.parts[0].text.trim() === "") {
+              console.warn(`BG Warning: Empty text found in parts for turn ${i}. Fixing.`);
+              contents[i].parts[0].text = `(${turn.role} provided no text)`;
+         }
+     }
+
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:${GENERATE_CONTENT_API}?key=${apiKey}`;
+
+    const requestBody = {
+        contents: contents,
+        systemInstruction: systemInstruction,
+        safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
+        ],
+        generationConfig: {
+            responseMimeType: "text/plain",
+        }
+    };
+
+    const MAX_REQUEST_SIZE = 30000; // Adjust as needed
+    let requestBodyString = JSON.stringify(requestBody);
+
+    // *** Truncation Logic (Revised to preserve structure better) ***
+    if (requestBodyString.length > MAX_REQUEST_SIZE) {
+        console.warn(`BG: Request body size (${requestBodyString.length}) exceeds limit (${MAX_REQUEST_SIZE}). Attempting to truncate history.`);
+        const originalContents = requestBody.contents; // Use validated/fixed contents
+        const systemInstructionSize = JSON.stringify(systemInstruction).length;
+        const baseBodySize = requestBodyString.length - JSON.stringify(originalContents).length; // Approx size without contents
+        let availableSize = MAX_REQUEST_SIZE - baseBodySize - systemInstructionSize;
+
+        if (availableSize <= 0) {
+             console.error("BG: Base request size exceeds limit even without contents.");
+             throw new Error("Internal error: Request structure too large.");
+        }
+
+        const truncatedContents = [];
+        let currentSize = 0;
+
+        // Always include the first turn (User Context/Request)
+        if (originalContents.length > 0) {
+            const firstTurnString = JSON.stringify(originalContents[0]);
+            if (currentSize + firstTurnString.length <= availableSize) {
+                 truncatedContents.push(originalContents[0]);
+                 currentSize += firstTurnString.length;
+            } else {
+                 console.error("BG: First turn alone exceeds available size limit after accounting for base structure.");
+                 throw new Error("Initial context/request is too large to send.");
+            }
+        }
+
+        // Add turns from the END backwards, until size limit is reached
+        for (let i = originalContents.length - 1; i > 0; i--) { // Stop before index 0
+             const turnToAdd = originalContents[i];
+             const turnString = JSON.stringify(turnToAdd);
+
+             if (currentSize + turnString.length <= availableSize) {
+                 // It fits, insert it *after* the first element (index 1)
+                 truncatedContents.splice(1, 0, turnToAdd);
+                 currentSize += turnString.length;
+             } else {
+                 console.log(`BG: Truncation stopped at index ${i}. Adding turn would exceed limit.`);
+                 break; // Stop adding older turns
+             }
+        }
+
+        // Check if we ended up with only the first turn again
+        if (truncatedContents.length <= 1 && originalContents.length > 1) {
+             console.warn("BG: Truncation resulted in only the first turn fitting.");
+             // No need for special handling here, just send the first turn if that's all that fits.
+        }
+
+        requestBody.contents = truncatedContents; // Use the truncated list
+        requestBodyString = JSON.stringify(requestBody); // Update final string
+        console.log(`BG: Truncated history. Final size: ${requestBodyString.length}. Final turns: ${requestBody.contents.length}`);
+
+        // Final check
+        if (requestBodyString.length > MAX_REQUEST_SIZE) {
+            console.error("BG: Request body still too large after truncation logic. Aborting.");
+            throw new Error("Chat history is too large, even after attempting truncation.");
         }
     }
 
-    let aiHistoryString = "(Start of conversation)"; // Internal placeholder
-    if (aiHistory && aiHistory.length > 0) {
-        aiHistoryString = aiHistory.map(turn => {
-            // Use translated "You" if applicable, otherwise assume AI label doesn't need translation here
-            const roleLabel = turn.role === 'user' ? getMsg("textYou") : 'IA';
-            return `${roleLabel}: ${turn.text}`;
-        }).join("\n");
-         if (aiHistoryString.length > 4000) {
-              aiHistoryString = "... (history truncated)\n" + aiHistoryString.substring(aiHistoryString.length - 3997);
-         }
-    }
 
-    let prompt = followUpPromptTemplate.replace('{waContext}', waContextString);
-    prompt = prompt.replace('{aiHistory}', aiHistoryString);
-    return prompt;
-}
-
-
-/** Calls the Gemini API */
-async function callGeminiAPI(contentsPayload, apiKey) {
-     if (!apiKey) {
-        console.error("Background: callGeminiAPI missing API Key!");
-        // Throw translated error
-        throw new Error(getMsg("errorApiKeyNotProvidedInternal"));
-    }
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:${GENERATE_CONTENT_API}?key=${apiKey}`;
+    // console.log("Background: Sending Final Payload to Gemini API:", requestBodyString);
 
     try {
         console.log("Background: Calling Gemini API...");
         const response = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: contentsPayload,
-                 safetySettings: [ // Standard safety settings
-                     { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_NONE" },
-                     { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_NONE" },
-                     { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-                     { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" }
-                 ]
-            }),
-            signal: AbortSignal.timeout(60000) // 60s timeout
+            body: requestBodyString,
+            signal: AbortSignal.timeout(45000)
         });
 
         const data = await response.json();
@@ -279,17 +346,13 @@ async function callGeminiAPI(contentsPayload, apiKey) {
         if (!response.ok) {
              console.error("Background: Gemini API Error:", response.status, response.statusText, data);
              const errorDetail = data?.error?.message || JSON.stringify(data);
-             // Throw translated errors based on status
-             if (response.status === 400 && errorDetail.includes("API key not valid")) {
-                 throw new Error(getMsg("errorApiKeyInvalid"));
-             }
-             if (response.status === 429) {
-                  throw new Error(getMsg("errorApiRateLimit"));
-             }
-             if (response.status >= 500) {
-                  throw new Error(getMsg("errorApiServer", [response.status]));
-             }
-             // Generic translated API error
+             if (response.status === 400 && errorDetail.includes("parts must not be empty")) { throw new Error("Gemini API Error: A message part sent to the AI was empty."); }
+             if (response.status === 400 && errorDetail.includes("API key not valid")) { throw new Error(getMsg("errorApiKeyInvalid")); }
+             if (response.status === 429) { throw new Error(getMsg("errorApiRateLimit")); }
+             if (response.status === 400 && errorDetail.includes("User location is not supported")) { throw new Error("Gemini API Error: User location is not supported for this model."); }
+             if (response.status === 400 && errorDetail.toLowerCase().includes("request payload size exceeds the limit")) { throw new Error("Gemini API Error: The request is too large (history/context size limit exceeded)."); }
+              if (response.status === 400 && errorDetail.toLowerCase().includes("finish reason safety")){ throw new Error(getMsg("errorApiRequestBlocked", ["SAFETY"])); }
+             if (response.status >= 500) { throw new Error(getMsg("errorApiServer", [response.status])); }
              throw new Error(getMsg("errorApiGeneric", [response.status, errorDetail]));
         }
 
@@ -297,38 +360,19 @@ async function callGeminiAPI(contentsPayload, apiKey) {
         let textResponse = '';
         if (data.candidates && data.candidates.length > 0) {
             const candidate = data.candidates[0];
-             if (candidate.content?.parts?.length > 0) {
-                textResponse = candidate.content.parts.map(part => part.text).join("");
-            } else if (candidate.finishReason && candidate.finishReason !== 'STOP') {
-                 // Use translated placeholder for non-stop finish
-                 textResponse = getMsg("errorApiResponseNotGenerated", [candidate.finishReason]);
-                 console.warn(`BG: Finish Reason: ${candidate.finishReason}`, candidate.safetyRatings || '');
-                  // Prepend any partial text if available
-                  if (candidate.content?.parts?.[0]?.text) {
-                     textResponse = candidate.content.parts.map(part => part.text).join("") + "\n" + textResponse;
-                  }
-            } else {
-                 textResponse = getMsg("errorApiResponseEmpty"); // Translated placeholder
-                 console.warn("BG: Candidate format issue:", candidate);
-            }
-        } else if (data.promptFeedback?.blockReason) {
-             textResponse = getMsg("errorApiRequestBlocked", [data.promptFeedback.blockReason]); // Translated placeholder
-             console.warn("BG: Prompt blocked", data.promptFeedback);
-        } else {
-            textResponse = getMsg("errorApiResponseUnexpectedFormat"); // Translated placeholder
-            console.warn("BG: Response structure issue:", data);
-        }
+             if (candidate.content?.parts?.length > 0) { textResponse = candidate.content.parts.map(part => part.text).join(""); }
+             else if (candidate.finishReason && candidate.finishReason !== 'STOP') { textResponse = getMsg("errorApiResponseNotGenerated", [candidate.finishReason]); console.warn(`BG: Finish Reason: ${candidate.finishReason}`, candidate.safetyRatings || ''); if (candidate.content?.parts?.[0]?.text) { textResponse = candidate.content.parts.map(part => part.text).join("") + "\n" + textResponse; } }
+             else if (!candidate.content){ if (candidate.finishReason === 'SAFETY'){ textResponse = getMsg("errorApiRequestBlocked", [candidate.finishReason]); console.warn("BG: Request blocked by safety filters", candidate.safetyRatings); } else { textResponse = getMsg("errorApiResponseEmpty"); console.warn("BG: Candidate content missing, FinishReason:", candidate.finishReason); } }
+             else { textResponse = getMsg("errorApiResponseEmpty"); console.warn("BG: Candidate parts missing or empty:", candidate); }
+        } else if (data.promptFeedback?.blockReason) { textResponse = getMsg("errorApiRequestBlocked", [data.promptFeedback.blockReason]); console.warn("BG: Prompt blocked (top-level feedback)", data.promptFeedback); }
+        else { textResponse = getMsg("errorApiResponseUnexpectedFormat"); console.warn("BG: Unexpected Gemini response structure:", data); }
         return textResponse.trim();
 
     } catch (error) {
-        if (error.name === 'TimeoutError') {
-             console.error("Background: API call timed out.");
-             throw new Error(getMsg("errorApiTimeout")); // Translated timeout error
-         }
+        if (error.name === 'TimeoutError') { console.error("Background: API call timed out."); throw new Error(getMsg("errorApiTimeout")); }
         console.error("Background: Error in callGeminiAPI:", error);
-        // Re-throw error (it should already be translated if it came from status checks)
         throw (error instanceof Error ? error : new Error(String(error.message || error)));
     }
 }
 
-console.log("Background script loaded and listening (v0.4.3).");
+console.log("Background script loaded and listening (v0.4.10)."); // Update version comment

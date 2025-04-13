@@ -2,17 +2,17 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Resumir Chat</title>
+    <title>__MSG_popupTitle__</title> <!-- i18n -->
     <style>
         body {
             font-family: sans-serif;
-            width: 250px; /* Ancho del popup */
+            width: 250px;
             padding: 10px;
         }
         label, input, button {
             display: block;
             margin-bottom: 8px;
-            width: 95%; /* Ocupar casi todo el ancho */
+            width: 95%;
         }
         input[type="number"] {
             padding: 5px;
@@ -20,7 +20,7 @@
         button {
             padding: 8px;
             cursor: pointer;
-            background-color: #075E54; /* Verde WhatsApp */
+            background-color: #075E54;
             color: white;
             border: none;
             border-radius: 3px;
@@ -32,18 +32,26 @@
             font-size: 0.9em;
             margin-top: 10px;
             color: grey;
+            min-height: 1.2em; /* Prevent layout shift */
+        }
+        .error { /* Style for error messages */
+            color: red;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-    <h3>Resumir WhatsApp</h3>
-    <label for="message-count">Número de mensajes:</label>
-    <input type="number" id="message-count" min="1" value="10"> <!-- Valor por defecto 10 -->
+    <!-- Text set by JS -->
+    <h3></h3>
+    <label for="message-count"></label>
+    <input type="number" id="message-count" min="1" value="10">
 
-    <button id="summarize-button">Resumir Mensajes</button>
+    <!-- Text set by JS -->
+    <button id="summarize-button"></button>
 
-    <div id="status">Listo.</div>
+    <!-- Text set by JS -->
+    <div id="status"></div>
 
-    <script src="popup.js"></script> <!-- Enlaza el script de lógica del popup -->
+    <script src="popup.js"></script>
 </body>
 </html>

@@ -198,7 +198,7 @@
      "description": "Error reportado desde el content script.",
      "placeholders": { "details": { "content": "$1" } }
    },
-  "optionsTitle": {
+   "optionsTitle": {
     "message": "Configuración - WhatsApp Resumen IA",
     "description": "Título HTML para la página de opciones."
   },
@@ -230,29 +230,21 @@
     "message": "Necesitas una API Key de <a href='https://aistudio.google.com/app/apikey' target='_blank' rel='noopener'>Google AI Studio</a> para usar Gemini. La clave se guarda de forma segura en el almacenamiento sincronizado de tu navegador.",
     "description": "Texto descriptivo debajo de la entrada de la API key."
   },
-  "optionsPromptsSectionTitle": {
-    "message": "Personalización de Prompts",
-    "description": "Título de sección para la configuración de prompts."
-  },
-  "optionsPromptsDescription": {
-    "message": "Puedes ajustar las instrucciones que se envían a la IA. Usa los placeholders indicados.",
-    "description": "Texto descriptivo para la sección de prompts."
-  },
   "optionsSummaryPromptLabel": {
-    "message": "Prompt para Resumen Inicial:",
-    "description": "Etiqueta para el textarea del prompt de resumen."
+    "message": "Formato para Mensajes de WhatsApp:",
+    "description": "Etiqueta para la cadena de formato de mensaje de resumen."
   },
-  "optionsSummaryPromptPlaceholderInfo": {
-    "message": "Placeholder disponible: <code>{messages}</code> (será reemplazado por la lista de mensajes de WhatsApp).",
-    "description": "Información de placeholder debajo del textarea del prompt de resumen."
+  "optionsSummarySystemInstructionLabel": {
+    "message": "Instrucción de Sistema para Resumen Inicial:",
+    "description": "Etiqueta para el textarea de la instrucción de sistema de resumen."
   },
-  "optionsFollowupPromptLabel": {
-    "message": "Prompt para Preguntas de Seguimiento:",
-    "description": "Etiqueta para el textarea del prompt de seguimiento."
+  "optionsFollowupSystemInstructionLabel": {
+    "message": "Instrucción de Sistema para Preguntas de Seguimiento:",
+    "description": "Etiqueta para el textarea de la instrucción de sistema de seguimiento."
   },
-  "optionsFollowupPromptPlaceholderInfo": {
-    "message": "Placeholders disponibles: <code>{waContext}</code> (mensajes de WhatsApp), <code>{aiHistory}</code> (conversación con la IA).",
-    "description": "Información de placeholder debajo del textarea del prompt de seguimiento."
+  "optionsFollowupSystemInstructionPlaceholderInfo": {
+    "message": "Placeholder disponible: <code>{waContext}</code> (será reemplazado por el contexto relevante del chat de WhatsApp).",
+    "description": "Información de placeholder debajo del textarea de la instrucción de sistema de seguimiento."
   },
   "optionsSaveButton": {
     "message": "Guardar Configuración",
@@ -262,14 +254,10 @@
     "message": "Error: La API Key parece tener un formato incorrecto. Debe empezar con 'AIzaSy'.",
     "description": "Mensaje de estado cuando el formato de la API key es incorrecto."
   },
-  "optionsStatusSummaryPromptPlaceholderError": {
-    "message": "Error: El prompt de resumen DEBE incluir el placeholder {messages}.",
-    "description": "Mensaje de estado cuando falta el placeholder en el prompt de resumen."
-  },
-  "optionsStatusFollowupPromptPlaceholderError": {
-    "message": "Error: El prompt de seguimiento DEBE incluir los placeholders {waContext} y {aiHistory}.",
-    "description": "Mensaje de estado cuando faltan placeholders en el prompt de seguimiento."
-  },
+  "optionsStatusFollowupSysInstructionPlaceholderError": {
+     "message": "Advertencia: La instrucción de sistema de seguimiento debería incluir idealmente el placeholder {waContext}.",
+     "description": "Advertencia si falta el placeholder en la instrucción de sistema de seguimiento."
+   },
   "optionsStatusSaveSuccess": {
     "message": "Configuración guardada correctamente.",
     "description": "Mensaje de estado al guardar con éxito."
@@ -284,7 +272,7 @@
     "description": "Mensaje de estado al fallar la carga.",
     "placeholders": { "details": { "content": "$1" } }
   },
-  "errorApiKeyNotConfigured": {
+   "errorApiKeyNotConfigured": {
     "message": "Error: La API Key de Gemini no está configurada. Por favor, configúrala en las opciones de la extensión.",
     "description": "Mensaje de error cuando falta la API key (enviado al content script)."
   },
@@ -327,12 +315,32 @@
     "description": "Texto placeholder cuando la API bloquea la solicitud por seguridad.",
     "placeholders": { "reason": { "content": "$1" } }
   },
-  "errorApiResponseUnexpectedFormat": {
-    "message": "[Formato de respuesta inesperado de Gemini]",
-    "description": "Texto placeholder para respuesta malformada de la API."
-  },
   "errorApiTimeout": {
     "message": "La solicitud a la IA tardó demasiado en responder (Timeout).",
     "description": "Error lanzado en timeout de fetch a la API."
-  }
+  },
+   "optionsPromptsSectionTitle": {
+    "message": "Instrucción para la IA",
+    "description": "Título de sección para la configuración de prompts."
+  },
+  "optionsPromptsDescription": {
+    "message": "Define el comportamiento general y las instrucciones para el asistente IA.",
+    "description": "Texto descriptivo para la sección de prompts."
+  },
+   "optionsSystemInstructionLabel": {
+    "message": "Instrucción del Sistema:",
+    "description": "Etiqueta para el textarea de la instrucción del sistema."
+  },
+  "optionsSystemInstructionPlaceholderInfo": {
+    "message": "Proporciona directrices generales para la IA (ej: rol, tarea, tono). El contexto de WhatsApp y el historial de chat con el usuario se añadirán automáticamente.",
+    "description": "Información de placeholder debajo del textarea de la instrucción del sistema."
+  },
+  "optionsStatusSystemInstructionError": {
+    "message": "Error: La instrucción del sistema no puede estar vacía.",
+    "description": "Mensaje de estado si la instrucción del sistema se guarda vacía."
+  },
+   "defaultSystemInstruction": {
+      "message": "Eres un asistente IA integrado en un chat de WhatsApp. Tus funciones principales son resumir partes del contexto de la conversación de WhatsApp cuando se solicite y responder preguntas del usuario basándote en ese contexto y en el historial de chat en curso. Sé conciso, útil y céntrate en extraer información clave, decisiones y temas de los mensajes de WhatsApp proporcionados en los turnos del usuario. Formatea los resúmenes claramente.",
+      "description": "Texto de instrucción del sistema por defecto usado si no lo establece el usuario."
+   }
 }
