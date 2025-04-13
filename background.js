@@ -1,7 +1,8 @@
-// background.js - MODIFICADO v0.4.10 - Correct History/Context for Follow-up
+// background.js - MODIFICADO v0.4.11 - Model Selection, Timeout
 
-const MODEL_ID = 'gemini-2.0-flash';
+// REMOVED: const MODEL_ID = 'gemini-1.5-flash'; // Now loaded from settings
 const GENERATE_CONTENT_API = 'generateContent';
+const DEFAULT_MODEL_ID = "gemini-2.0-flash"; // Default model if not set
 
 // --- Helper for i18n ---
 function getMsg(key, substitutions = undefined) {
@@ -9,7 +10,7 @@ function getMsg(key, substitutions = undefined) {
         if (chrome && chrome.i18n && chrome.i18n.getMessage) {
             return chrome.i18n.getMessage(key, substitutions) || key;
         }
-        return key;
+        return key; // Basic fallback
     } catch (e) {
         console.warn(`i18n Background Error getting key "${key}":`, e);
         return key;
@@ -24,29 +25,40 @@ async function getSettings() {
     return new Promise((resolve) => {
         chrome.storage.sync.get({
             geminiApiKey: '',
-            systemInstructionPrompt: DEFAULT_SYSTEM_INSTRUCTION
+            systemInstructionPrompt: DEFAULT_SYSTEM_INSTRUCTION,
+            selectedModelId: DEFAULT_MODEL_ID // Load selected model ID
         }, (items) => {
             if (chrome.runtime.lastError) {
                 console.error("Background: Error loading settings:", chrome.runtime.lastError.message);
-                resolve({
+                resolve({ // Return defaults on error
                     apiKey: '',
-                    systemInstructionText: DEFAULT_SYSTEM_INSTRUCTION
+                    systemInstructionText: DEFAULT_SYSTEM_INSTRUCTION,
+                    modelId: DEFAULT_MODEL_ID // Fallback
                 });
             } else {
+                 // Basic validation if needed, otherwise just use the value or default
+                 let modelId = items.selectedModelId || DEFAULT_MODEL_ID;
+                 // Optionally validate against a known list if needed
+                 // const knownModels = ["gemini-1.5-flash-latest", "gemini-1.5-pro-latest"];
+                 // if (!knownModels.includes(modelId)) modelId = DEFAULT_MODEL_ID;
+
                  resolve({
                      apiKey: items.geminiApiKey || '',
-                     systemInstructionText: items.systemInstructionPrompt || DEFAULT_SYSTEM_INSTRUCTION
+                     systemInstructionText: items.systemInstructionPrompt || DEFAULT_SYSTEM_INSTRUCTION,
+                     modelId: modelId // Store loaded/default model ID
                  });
             }
         });
     });
 }
 
+
 // --- Main Message Listener ---
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     console.log("Background: Received message action:", message.action);
 
     async function handleMessage() {
+        // ** Load settings at the start of each handler call **
         const settings = await getSettings();
 
         // Handle Options Page Request
@@ -66,7 +78,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                       await chrome.tabs.sendMessage(sender.tab.id, { action: "apiKeyMissingError", error: errorMessage });
                   } catch (error) { console.error("BG: Failed to send API key error to CS:", error.message); }
              }
-             if (message.action === "processMessagesForSummary") {
+             if (message.action === "processMessagesForSummary") { // Only respond if original action expects it
                 sendResponse({ success: false, error: errorMessage });
              }
              return;
@@ -95,7 +107,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             ];
 
             try {
-                const summary = await callGeminiAPI(contentsPayload, systemInstructionPayload, settings.apiKey);
+                // Pass settings.modelId to the API call
+                const summary = await callGeminiAPI(contentsPayload, systemInstructionPayload, settings.apiKey, settings.modelId);
                 console.log("Background: Initial summary generated.");
                 sendResponse({ success: true, summary: summary });
             } catch (error) {
@@ -106,21 +119,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
         // --- Handle Follow-up Question ---
         } else if (message.action === "sendFollowUpMessage") {
-            // aiHistory: The full chat history from the panel, including the initial user request,
-            //            the model's summary, and subsequent Q&A. Ends with the latest user question.
-            // waContext: The WhatsApp messages used for the *initial* summary.
             const { history: aiHistory = [], waContext = [] } = message.data;
 
-            // Basic check: History must exist
-            if (!aiHistory.length) {
-                console.error("Background: Invalid AI history received for follow-up (empty).");
-                 if (sender.tab?.id) { /* ... send error back ... */ }
-                return;
-            }
-            // Ensure the last turn is the user's question we need to answer
-             if (aiHistory[aiHistory.length - 1].role !== 'user') {
-                 console.error("Background: Invalid AI history received for follow-up (must end with user).", aiHistory);
-                  if (sender.tab?.id) { /* ... send error back ... */ }
+             // Basic check: History must exist and end with user
+             if (!aiHistory.length || aiHistory[aiHistory.length - 1].role !== 'user') {
+                 console.error("Background: Invalid AI history received for follow-up (empty or doesn't end with user).", aiHistory);
+                  if (sender.tab?.id) {
+                      try { await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: `[${getMsg("statusErrorGeneric")}: Invalid chat history received]` } }); } catch(e){}
+                  }
                  return;
              }
 
@@ -132,45 +138,32 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
                 ? `Background context from the original WhatsApp chat snippet:\n---\n${formattedWaContext}\n---\n\n`
                 : "No prior WhatsApp context was provided.\n\n";
 
-            // *** REVISED PAYLOAD CONSTRUCTION for Follow-up ***
+            // Revised payload construction
             const fullContents = [];
-
-            // 1. Add the WA Context Preamble as the *first* user message.
-            //    This clearly separates the original WA context from the AI chat history.
-             fullContents.push({
-                 role: "user",
-                 parts: [{ text: contextPreamble + "Now, regarding our conversation:" }]
-             });
-
-            // 2. Add a placeholder model response to acknowledge the context (maintains alternation).
-            //    This acts as a bridge between the raw context and the actual chat history.
-             fullContents.push({
-                 role: "model",
-                 parts: [{ text: "Understood. I have the original WhatsApp context (if provided). Please proceed with our conversation." }]
-             });
-
-            // 3. Add the *entire* AI chat history from the panel.
-            aiHistory.forEach(turn => {
-                 // Ensure the turn structure is valid before pushing
+             fullContents.push({ role: "user", parts: [{ text: contextPreamble + "Now, regarding our conversation:" }] });
+             fullContents.push({ role: "model", parts: [{ text: "Understood. I have the original WhatsApp context (if provided). Please proceed with our conversation." }] });
+             aiHistory.forEach(turn => {
                  const textContent = turn.text || `(${turn.role} provided no text)`;
                  if (turn.role && (turn.role === 'user' || turn.role === 'model')) {
-                     fullContents.push({
-                         role: turn.role,
-                         parts: [{ text: textContent }]
-                     });
-                 } else {
-                     console.warn("BG: Skipping turn with invalid role in aiHistory:", turn);
-                 }
+                     fullContents.push({ role: turn.role, parts: [{ text: textContent }] });
+                 } else { console.warn("BG: Skipping turn with invalid role in aiHistory:", turn); }
             });
 
 
-            // Optional: Log the final structure
+            // Check if we only have context + placeholder (meaning original history was empty/invalid)
+             if (fullContents.length <= 2) {
+                 console.error("Background: No valid AI history turns found to add after context.");
+                  if (sender.tab?.id) {
+                      try { await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: `[${getMsg("statusErrorGeneric")}: No valid chat history found to process]` } }); } catch(e){}
+                  }
+                 return;
+             }
+
             // console.log("BG DEBUG: Final Follow-up Contents Structure:", JSON.stringify(fullContents, null, 2));
 
              try {
-                 // The history structure sent now explicitly includes the context first,
-                 // then the actual user/model interactions.
-                 const aiResponse = await callGeminiAPI(fullContents, systemInstructionPayload, settings.apiKey);
+                 // Pass settings.modelId to the API call
+                 const aiResponse = await callGeminiAPI(fullContents, systemInstructionPayload, settings.apiKey, settings.modelId);
                  console.log("Background: Follow-up response generated.");
                  if (sender.tab?.id) {
                       try { await chrome.tabs.sendMessage(sender.tab.id, { action: "displayAiResponse", data: { response: aiResponse } }); }
@@ -221,36 +214,31 @@ function formatMessagesForPayload(messages) {
 }
 
 
-// --- Gemini API Call Function ---
-async function callGeminiAPI(contents, systemInstruction, apiKey) {
+// --- Gemini API Call Function (Updated Signature, Timeout) ---
+async function callGeminiAPI(contents, systemInstruction, apiKey, modelId = DEFAULT_MODEL_ID) { // Added modelId parameter
      if (!apiKey) { throw new Error(getMsg("errorApiKeyNotProvidedInternal")); }
 
+    // Use the passed modelId or the default
+    const effectiveModelId = modelId || DEFAULT_MODEL_ID;
+    console.log(`BG: Calling Gemini API with model: ${effectiveModelId}`); // Log the model being used
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${effectiveModelId}:${GENERATE_CONTENT_API}?key=${apiKey}`; // Use effectiveModelId
+
     // Pre-validation of contents structure
-     if (!Array.isArray(contents)) {
-         throw new Error("Internal error: 'contents' must be an array.");
-     }
-     if (contents.length === 0 && (!systemInstruction || !systemInstruction.parts || !systemInstruction.parts[0]?.text)){
-         // Avoid API call if both contents AND systemInstruction are effectively empty
-          throw new Error("Internal error: Cannot call API with empty contents and system instruction.");
-     }
+     if (!Array.isArray(contents)) { throw new Error("Internal error: 'contents' must be an array."); }
+      if (contents.length === 0 && (!systemInstruction || !systemInstruction.parts || !systemInstruction.parts[0]?.text)){
+           throw new Error("Internal error: Cannot call API with empty contents and system instruction.");
+      }
      for (let i = 0; i < contents.length; i++) {
          const turn = contents[i];
          if (!turn || typeof turn !== 'object') { throw new Error(`Internal error: Invalid structure for turn ${i} (not an object).`); }
          if (typeof turn.role !== 'string' || !['user', 'model'].includes(turn.role)) { throw new Error(`Internal error: Invalid role "${turn.role}" for turn ${i}.`); }
-         if (!turn.parts || !Array.isArray(turn.parts) || turn.parts.length === 0) {
-             console.warn(`BG Warning: 'parts' array is missing or empty for turn ${i}. Fixing.`);
-             contents[i].parts = [{ text: `(${turn.role} provided no text)` }];
-         } else if (typeof turn.parts[0].text !== 'string') {
-              console.warn(`BG Warning: parts[0].text is not a string for turn ${i}. Fixing.`, turn.parts[0]);
-              contents[i].parts[0].text = String(turn.parts[0].text || `(${turn.role} provided no text)`);
-         } else if (turn.parts[0].text.trim() === "") {
-              console.warn(`BG Warning: Empty text found in parts for turn ${i}. Fixing.`);
-              contents[i].parts[0].text = `(${turn.role} provided no text)`;
-         }
+         if (!turn.parts || !Array.isArray(turn.parts) || turn.parts.length === 0) { console.warn(`BG Warning: 'parts' array is missing or empty for turn ${i}. Fixing.`); contents[i].parts = [{ text: `(${turn.role} provided no text)` }]; }
+         else if (typeof turn.parts[0].text !== 'string') { console.warn(`BG Warning: parts[0].text is not a string for turn ${i}. Fixing.`, turn.parts[0]); contents[i].parts[0].text = String(turn.parts[0].text || `(${turn.role} provided no text)`); }
+         else if (turn.parts[0].text.trim() === "") { console.warn(`BG Warning: Empty text found in parts for turn ${i}. Fixing.`); contents[i].parts[0].text = `(${turn.role} provided no text)`; }
+         delete contents[i].text; // Clean up potential extra property
      }
 
-
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:${GENERATE_CONTENT_API}?key=${apiKey}`;
 
     const requestBody = {
         contents: contents,
@@ -266,67 +254,51 @@ async function callGeminiAPI(contents, systemInstruction, apiKey) {
         }
     };
 
-    const MAX_REQUEST_SIZE = 30000; // Adjust as needed
+    const MAX_REQUEST_SIZE = 30000;
     let requestBodyString = JSON.stringify(requestBody);
 
-    // *** Truncation Logic (Revised to preserve structure better) ***
     if (requestBodyString.length > MAX_REQUEST_SIZE) {
+        // *** Truncation Logic ***
         console.warn(`BG: Request body size (${requestBodyString.length}) exceeds limit (${MAX_REQUEST_SIZE}). Attempting to truncate history.`);
-        const originalContents = requestBody.contents; // Use validated/fixed contents
+        const originalContents = requestBody.contents;
         const systemInstructionSize = JSON.stringify(systemInstruction).length;
-        const baseBodySize = requestBodyString.length - JSON.stringify(originalContents).length; // Approx size without contents
+        const baseBodySize = requestBodyString.length - JSON.stringify(originalContents).length;
         let availableSize = MAX_REQUEST_SIZE - baseBodySize - systemInstructionSize;
 
-        if (availableSize <= 0) {
-             console.error("BG: Base request size exceeds limit even without contents.");
-             throw new Error("Internal error: Request structure too large.");
-        }
+        if (availableSize <= 0) { throw new Error("Internal error: Request structure too large."); }
 
         const truncatedContents = [];
         let currentSize = 0;
 
-        // Always include the first turn (User Context/Request)
+        // Always include the first turn
         if (originalContents.length > 0) {
             const firstTurnString = JSON.stringify(originalContents[0]);
             if (currentSize + firstTurnString.length <= availableSize) {
                  truncatedContents.push(originalContents[0]);
                  currentSize += firstTurnString.length;
-            } else {
-                 console.error("BG: First turn alone exceeds available size limit after accounting for base structure.");
-                 throw new Error("Initial context/request is too large to send.");
-            }
+            } else { throw new Error("Initial context/request is too large to send."); }
         }
 
-        // Add turns from the END backwards, until size limit is reached
-        for (let i = originalContents.length - 1; i > 0; i--) { // Stop before index 0
+        // Add turns from the END backwards
+        for (let i = originalContents.length - 1; i > 0; i--) {
              const turnToAdd = originalContents[i];
              const turnString = JSON.stringify(turnToAdd);
-
-             if (currentSize + turnString.length <= availableSize) {
-                 // It fits, insert it *after* the first element (index 1)
-                 truncatedContents.splice(1, 0, turnToAdd);
-                 currentSize += turnString.length;
-             } else {
-                 console.log(`BG: Truncation stopped at index ${i}. Adding turn would exceed limit.`);
-                 break; // Stop adding older turns
-             }
+             // Ensure we leave space for the '[]' array characters and commas
+             if (currentSize + turnString.length + (truncatedContents.length > 1 ? 1 : 0) <= availableSize) {
+                 truncatedContents.splice(1, 0, turnToAdd); // Insert after first element
+                 currentSize += turnString.length + (truncatedContents.length > 2 ? 1 : 0); // Add comma length approx
+             } else { console.log(`BG: Truncation stopped at index ${i}.`); break; }
         }
 
-        // Check if we ended up with only the first turn again
         if (truncatedContents.length <= 1 && originalContents.length > 1) {
-             console.warn("BG: Truncation resulted in only the first turn fitting.");
-             // No need for special handling here, just send the first turn if that's all that fits.
+            console.warn("BG: Truncation resulted in only the first turn fitting.");
         }
 
-        requestBody.contents = truncatedContents; // Use the truncated list
-        requestBodyString = JSON.stringify(requestBody); // Update final string
+        requestBody.contents = truncatedContents;
+        requestBodyString = JSON.stringify(requestBody);
         console.log(`BG: Truncated history. Final size: ${requestBodyString.length}. Final turns: ${requestBody.contents.length}`);
 
-        // Final check
-        if (requestBodyString.length > MAX_REQUEST_SIZE) {
-            console.error("BG: Request body still too large after truncation logic. Aborting.");
-            throw new Error("Chat history is too large, even after attempting truncation.");
-        }
+        if (requestBodyString.length > MAX_REQUEST_SIZE) { throw new Error("Chat history is too large, even after attempting truncation."); }
     }
 
 
@@ -338,7 +310,8 @@ async function callGeminiAPI(contents, systemInstruction, apiKey) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: requestBodyString,
-            signal: AbortSignal.timeout(45000)
+            // *** INCREASED TIMEOUT ***
+            signal: AbortSignal.timeout(210000) // 210 seconds
         });
 
         const data = await response.json();
@@ -375,4 +348,4 @@ async function callGeminiAPI(contents, systemInstruction, apiKey) {
     }
 }
 
-console.log("Background script loaded and listening (v0.4.10)."); // Update version comment
+console.log("Background script loaded and listening (v0.4.11).");

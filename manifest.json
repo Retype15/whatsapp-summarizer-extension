@@ -1,14 +1,15 @@
-// manifest.json - MODIFICADO v0.4.10 - API Structure Change
+// manifest.json - MODIFICADO v0.4.11 - Model Selection, Markdown, Copy
 {
   "manifest_version": 3,
   "name": "__MSG_extensionName__",
-  "version": "0.4.10",
+  "version": "0.4.11", // Incremented version
   "description": "__MSG_extensionDescription__",
   "default_locale": "en",
   "permissions": [
     "scripting",
     "storage",
     "tabs"
+    // "clipboardWrite" // Implicitly granted for content scripts interacting with the page
   ],
   "host_permissions": [
     "https://web.whatsapp.com/*",

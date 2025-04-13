@@ -339,8 +339,24 @@
     "message": "Error: La instrucción del sistema no puede estar vacía.",
     "description": "Mensaje de estado si la instrucción del sistema se guarda vacía."
   },
-   "defaultSystemInstruction": {
+  "defaultSystemInstruction": {
       "message": "Eres un asistente IA integrado en un chat de WhatsApp. Tus funciones principales son resumir partes del contexto de la conversación de WhatsApp cuando se solicite y responder preguntas del usuario basándote en ese contexto y en el historial de chat en curso. Sé conciso, útil y céntrate en extraer información clave, decisiones y temas de los mensajes de WhatsApp proporcionados en los turnos del usuario. Formatea los resúmenes claramente.",
       "description": "Texto de instrucción del sistema por defecto usado si no lo establece el usuario."
-   }
+  },
+  "optionsModelSelectionLabel": {
+    "message": "Seleccionar Modelo Gemini:",
+    "description": "Etiqueta para el desplegable de selección de modelo."
+  },
+  "optionsModelSelectionDescription": {
+    "message": "Elige el modelo IA a usar. 'Flash' es más rápido, 'Pro' puede ser más capaz pero más lento. Por defecto: 1.5 Flash.",
+    "description": "Descripción para el desplegable de selección de modelo."
+  },
+  "copyButtonTitle": {
+    "message": "Copiar texto del mensaje",
+    "description": "Tooltip para el botón de copiar en los mensajes del chat."
+  },
+  "copySuccessTooltip": {
+    "message": "¡Copiado!",
+    "description": "Tooltip temporal mostrado después de copiar texto con éxito."
+  }
 }

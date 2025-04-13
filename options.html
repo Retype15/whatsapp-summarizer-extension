@@ -2,50 +2,78 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>__MSG_optionsTitle__</title>
+    <!-- Title set dynamically by JS -->
+    <title>Settings</title>
     <style>
-        /* CSS remains the same */
+        /* CSS remains the same as v0.4.11 */
         body { font-family: sans-serif; padding: 20px; max-width: 600px; margin: auto; background-color: #f4f4f4; color: #333; }
         h1 { text-align: center; color: #075E54; }
         .option-group { background-color: white; padding: 15px 20px; margin-bottom: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         label { display: block; margin-bottom: 8px; font-weight: bold; color: #555; }
-        input[type="text"], input[type="password"], textarea { width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+        input[type="text"], input[type="password"], textarea, select { width: 95%; padding: 10px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; box-sizing: border-box; }
         input[type="password"] { font-family: monospace; }
-        textarea { min-height: 120px; /* Slightly taller for system instruction */ resize: vertical; font-family: monospace; line-height: 1.5; }
+        textarea { min-height: 120px; resize: vertical; font-family: monospace; line-height: 1.5; }
         button#save { padding: 10px 20px; background-color: #128C7E; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; transition: background-color 0.2s; display: block; margin: 10px auto 0 auto; }
         button#save:hover { background-color: #075E54; }
         #status { margin-top: 15px; font-weight: bold; text-align: center; min-height: 20px; }
         .status-success { color: green; }
         .status-error { color: red; }
-        p.description { font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 15px; line-height: 1.4; }
-        .placeholder-info { font-style: italic; color: #888; font-size: 0.85em; margin-top: -10px; margin-bottom: 10px; }
+        p.description, p.placeholder-info { font-size: 0.9em; color: #666; margin-top: -10px; margin-bottom: 15px; line-height: 1.4; }
+        .placeholder-info { font-style: italic; color: #888; font-size: 0.85em;}
         .toggle-visibility { font-size: 0.8em; margin-left: 10px; cursor: pointer; color: #075E54; text-decoration: underline; background: none; border: none; padding: 0; }
     </style>
 </head>
 <body>
 
-    <h1>__MSG_optionsPageTitle__</h1>
+    <h1 data-i18n="optionsPageTitle"></h1>
 
     <div class="option-group">
-        <h2>__MSG_optionsApiKeySectionTitle__</h2>
-        <label for="apiKey">__MSG_optionsApiKeyLabel__</label>
-        <input type="password" id="apiKey" placeholder="__MSG_optionsApiKeyPlaceholder__">
-        <button class="toggle-visibility" id="toggleApiKey">__MSG_optionsApiKeyToggleShow__</button>
-        <p class="description">__MSG_optionsApiKeyDescription__</p>
+        <h2 data-i18n="optionsApiKeySectionTitle"></h2>
+        <label for="apiKey" data-i18n="optionsApiKeyLabel"></label>
+        <input type="password" id="apiKey" data-i18n-placeholder="optionsApiKeyPlaceholder">
+        <button class="toggle-visibility" id="toggleApiKey" data-i18n="optionsApiKeyToggleShow"></button>
+        <p class="description" data-i18n-html="optionsApiKeyDescription"></p> <!-- Use data-i18n-html for tags -->
     </div>
 
-    <!-- *** UPDATED PROMPTS SECTION *** -->
-    <div class="option-group">
-        <h2>__MSG_optionsPromptsSectionTitle__</h2>
-        <p class="description">__MSG_optionsPromptsDescription__</p>
+    <!-- *** UPDATED Model Selection *** -->
+	<div class="option-group">
+		<label for="modelSelector" data-i18n="optionsModelSelectionLabel"></label>
+		<select id="modelSelector">
+			<!-- Stable Models -->
+			<optgroup label="Stable 2.0 Models">
+				<option value="gemini-2.0-flash">Gemini 2.0 Flash (Default model)</option> <!-- Default Model -->
+				<option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite</option> <!-- Lite 2.0 model -->
+			</optgroup>
+			<optgroup label="Stable 1.5 Models">
+				<option value="gemini-1.5-flash-latest">Gemini 1.5 Flash (Latest Tag)</option>
+				<option value="gemini-1.5-pro-latest">Gemini 1.5 Pro (Latest Tag)</option>
+				<option value="gemini-1.5-pro">Gemini 1.5 Pro</option>
+				<option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+				<option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B</option> <!-- Very basic model -->
+			</optgroup>
+			
+			<!-- Experimental Models -->
+			<optgroup label="Experimental Models">
+				<option value="gemini-2.5-pro-preview-03-25">Gemini 2.5 Pro (Experimental)</option>
+				<option value="gemini-2.0-flash-thinking-exp-01-21">Gemini 2.0 Flash Thinking (Experimental)</option>
+				<option value="gemini-2.0-flash-exp-image-generation">Gemini 2.0 Flash with image generation (Experimental)</option>
+			</optgroup>
+		</select>
+		<p class="description" data-i18n="optionsModelSelectionDescription"></p>
+	</div>
 
-        <label for="systemInstructionPrompt">__MSG_optionsSystemInstructionLabel__</label>
+     <!-- *** END Model Selection *** -->
+
+
+    <div class="option-group">
+        <h2 data-i18n="optionsPromptsSectionTitle"></h2>
+        <p class="description" data-i18n="optionsPromptsDescription"></p>
+        <label for="systemInstructionPrompt" data-i18n="optionsSystemInstructionLabel"></label>
         <textarea id="systemInstructionPrompt" spellcheck="false"></textarea>
-        <p class="placeholder-info">__MSG_optionsSystemInstructionPlaceholderInfo__</p>
+        <p class="placeholder-info" data-i18n-html="optionsSystemInstructionPlaceholderInfo"></p> <!-- Use data-i18n-html for tags -->
     </div>
-    <!-- *** END UPDATED PROMPTS SECTION *** -->
 
-    <button id="save">__MSG_optionsSaveButton__</button>
+    <button id="save" data-i18n="optionsSaveButton"></button>
     <div id="status"></div>
 
     <script src="options.js"></script>

@@ -328,8 +328,24 @@
     "description": "Status message if system instruction is saved empty."
   },
 
-   "defaultSystemInstruction": {
+  "defaultSystemInstruction": {
       "message": "You are an AI assistant embedded in a WhatsApp chat. Your primary functions are to summarize parts of the WhatsApp conversation context when requested and to answer user questions based on that context and the ongoing chat history. Be concise, helpful, and focus on extracting key information, decisions, and topics from the WhatsApp messages provided in the user turns. Format summaries clearly.",
       "description": "Default system instruction text used if not set by user."
-   }
+  },
+  "optionsModelSelectionLabel": {
+    "message": "Select Gemini Model:",
+    "description": "Label for the model selection dropdown."
+  },
+  "optionsModelSelectionDescription": {
+    "message": "Choose the AI model to use. 'Flash' is faster, 'Pro' may be more capable but slower. Default: 1.5 Flash.",
+    "description": "Description for the model selection dropdown."
+  },
+  "copyButtonTitle": {
+    "message": "Copy message text",
+    "description": "Tooltip for the copy button on chat messages."
+  },
+  "copySuccessTooltip": {
+    "message": "Copied!",
+    "description": "Temporary tooltip shown after successfully copying text."
+  }
 }
