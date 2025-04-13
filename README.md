@@ -95,7 +95,7 @@ Please review the full [Privacy Policy](PRIVACY_POLICY.md) for details.
 
 ## 📄 License
 
-This project is licensed under a custom non-commercial license. Please see the [LICENCE](LICENCE) file for full details.
+This project is licensed under a custom non-commercial license. Please see the [https://github.com/Retype15/whatsapp-summarizer-extension?tab=License-1-ov-file](LICENCE) file for full details.
 
 **Key Terms:**
 *   Free to use, copy, modify, and distribute for **non-commercial purposes**.
